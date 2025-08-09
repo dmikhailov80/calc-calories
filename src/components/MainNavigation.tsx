@@ -12,8 +12,8 @@ const navigationItems = [
     icon: Home,
   },
   {
-    name: 'Ингридиенты',
-    href: '/ingredients',
+    name: 'Продукты',
+    href: '/products',
     icon: BookOpen,
   },
   {
