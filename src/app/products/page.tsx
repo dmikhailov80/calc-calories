@@ -2,8 +2,8 @@
 
 import { useSession } from 'next-auth/react';
 import { useState, useEffect, useRef } from 'react';
-import { BookOpen, Search, Info } from 'lucide-react';
-import { PRODUCTS_DATA, getAllCategories, getProductsByCategory, searchProducts, PRODUCT_CATEGORIES } from '@/lib/products-data';
+import { BookOpen, Search, Info, Plus } from 'lucide-react';
+import { PRODUCTS_DATA, getAllCategories, getProductsByCategory, searchProducts, PRODUCT_CATEGORIES, Product } from '@/lib/products-data';
 import ProductCard from '@/components/ProductCard';
 
 export default function ProductsPage() {
@@ -69,6 +69,25 @@ export default function ProductsPage() {
   const filteredProducts = getFilteredProducts();
   const categories = getAllCategories();
 
+  // Обработчики для управления продуктами
+  const handleEditProduct = (product: Product) => {
+    // TODO: Реализовать модальное окно для редактирования продукта
+    alert(`Редактирование продукта: ${product.name}\nЭта функция будет реализована в следующих обновлениях.`);
+  };
+
+  const handleDeleteProduct = (productId: string) => {
+    // TODO: Реализовать подтверждение удаления и API вызов
+    const product = PRODUCTS_DATA.find(p => p.id === productId);
+    if (product && confirm(`Вы уверены, что хотите удалить продукт "${product.name}"?`)) {
+      alert(`Удаление продукта с ID: ${productId}\nЭта функция будет реализована в следующих обновлениях.`);
+    }
+  };
+
+  const handleAddProduct = () => {
+    // TODO: Реализовать модальное окно для добавления нового продукта
+    alert(`Добавление нового продукта\nЭта функция будет реализована в следующих обновлениях.`);
+  };
+
   return (
     <div className="container mx-auto p-4 lg:p-6 pb-20 lg:pb-6">
       <div className="flex items-center justify-between mb-6">
@@ -77,23 +96,36 @@ export default function ProductsPage() {
           <h1 className="text-3xl font-bold text-foreground">Продукты</h1>
         </div>
         
-        {/* Информационная иконка */}
-        <div className="relative" ref={infoRef}>
+        {/* Кнопки управления */}
+        <div className="flex items-center space-x-2">
+          {/* Кнопка добавления продукта */}
           <button
-            onClick={() => setShowInfo(!showInfo)}
-            className="p-2 rounded-full hover:bg-secondary transition-colors"
-            aria-label="Информация о показателях"
+            onClick={handleAddProduct}
+            className="flex items-center justify-center sm:justify-start sm:space-x-2 px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            aria-label="Добавить продукт"
           >
-            <Info className="h-5 w-5 text-muted-foreground" />
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline ml-0 sm:ml-0">Добавить</span>
           </button>
           
-          {/* Tooltip */}
-          {showInfo && (
-            <div className="absolute right-0 top-full mt-2 bg-card border rounded-lg shadow-lg p-3 text-sm text-muted-foreground whitespace-nowrap z-10">
-              <p>Все показатели указаны на 100 грамм продукта</p>
-              <div className="absolute -top-1 right-3 w-2 h-2 bg-card border-t border-l rotate-45"></div>
-            </div>
-          )}
+          {/* Информационная иконка */}
+          <div className="relative" ref={infoRef}>
+            <button
+              onClick={() => setShowInfo(!showInfo)}
+              className="p-2 rounded-full hover:bg-secondary transition-colors"
+              aria-label="Информация о показателях"
+            >
+              <Info className="h-5 w-5 text-muted-foreground" />
+            </button>
+          
+            {/* Tooltip */}
+            {showInfo && (
+              <div className="absolute right-0 top-full mt-2 bg-card border rounded-lg shadow-lg p-3 text-sm text-muted-foreground whitespace-nowrap z-10">
+                <p>Все показатели указаны на 100 грамм продукта</p>
+                <div className="absolute -top-1 right-3 w-2 h-2 bg-card border-t border-l rotate-45"></div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -147,7 +179,12 @@ export default function ProductsPage() {
           </div>
         ) : (
           filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard 
+              key={product.id} 
+              product={product} 
+              onEdit={handleEditProduct}
+              onDelete={handleDeleteProduct}
+            />
           ))
         )}
       </div>

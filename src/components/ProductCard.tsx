@@ -1,14 +1,40 @@
 'use client';
 
+import { useState } from 'react';
+import { Edit, Trash2 } from 'lucide-react';
 import { Product } from '@/lib/products-data';
+import { Button } from '@/components/ui/button';
 
 interface ProductCardProps {
   product: Product;
+  onEdit?: (product: Product) => void;
+  onDelete?: (productId: string) => void;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const handleCardClick = () => {
+    setIsExpanded(!isExpanded);
+  };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit?.(product);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete?.(product.id);
+  };
+
   return (
-    <div className="bg-card p-3 sm:p-4 rounded-lg border shadow-sm">
+    <div 
+      className={`bg-card p-3 sm:p-4 rounded-lg border shadow-sm transition-all duration-200 cursor-pointer hover:shadow-md ${
+        isExpanded ? 'ring-2 ring-primary/20' : ''
+      }`}
+      onClick={handleCardClick}
+    >
       <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
         {/* Информация о продукте */}
         <div className="flex-1">
@@ -36,6 +62,32 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         </div>
       </div>
+      
+      {/* Кнопки управления (показываются при развертывании) */}
+      {isExpanded && (
+        <div className="mt-4 pt-3 border-t border-border">
+          <div className="flex justify-end space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleEditClick}
+              className="flex items-center space-x-2 hover:bg-primary hover:text-primary-foreground"
+            >
+              <Edit className="h-4 w-4" />
+              <span>Редактировать</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDeleteClick}
+              className="flex items-center space-x-2 text-destructive border-destructive hover:bg-destructive hover:text-white"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Удалить</span>
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
