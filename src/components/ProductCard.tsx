@@ -86,10 +86,10 @@ export default function ProductCard({ product, onEdit, onDelete, onReset }: Prod
               variant="outline"
               size="sm"
               onClick={handleEditClick}
-              className="flex items-center space-x-2 hover:bg-primary hover:text-primary-foreground"
+              className="flex items-center space-x-2 hover:bg-primary hover:text-primary-foreground max-[418px]:space-x-0 max-[418px]:px-2"
             >
               <Edit className="h-4 w-4" />
-              <span>Редактировать</span>
+              <span className="max-[418px]:hidden">Ред</span>
             </Button>
             
             {/* Кнопка сброса для измененных системных продуктов */}
@@ -98,10 +98,10 @@ export default function ProductCard({ product, onEdit, onDelete, onReset }: Prod
                 variant="outline"
                 size="sm"
                 onClick={handleResetClick}
-                className="flex items-center space-x-2 text-orange-600 border-orange-300 hover:bg-orange-600 hover:text-white"
+                className="flex items-center space-x-2 text-orange-600 border-orange-300 hover:bg-orange-600 hover:text-white max-[418px]:space-x-0 max-[418px]:px-2"
               >
                 <RotateCcw className="h-4 w-4" />
-                <span>Сбросить</span>
+                <span className="max-[418px]:hidden">Сбросить</span>
               </Button>
             )}
             
@@ -109,10 +109,10 @@ export default function ProductCard({ product, onEdit, onDelete, onReset }: Prod
               variant="outline"
               size="sm"
               onClick={handleDeleteClick}
-              className="flex items-center space-x-2 text-destructive border-destructive hover:bg-destructive hover:text-white"
+              className="flex items-center space-x-2 text-destructive border-destructive hover:bg-destructive hover:text-white max-[418px]:space-x-0 max-[418px]:px-2"
             >
               <Trash2 className="h-4 w-4" />
-              <span>Удалить</span>
+              <span className="max-[418px]:hidden">Удалить</span>
             </Button>
           </div>
         </div>
