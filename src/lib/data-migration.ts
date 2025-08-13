@@ -1,14 +1,16 @@
 import { Product } from './products-data';
 import { PRODUCT_CATEGORIES, getCategoryByKey } from './ data/categories';
+import { PRODUCTS_DATABASE } from './ data/products';
 
 export interface MigrationResult {
   migratedProducts: Product[];
   issues: MigrationIssue[];
   hasChanges: boolean;
+  cleanedDeletedProducts?: string[]; // ID продуктов, которые были очищены из списка удаленных
 }
 
 export interface MigrationIssue {
-  type: 'invalid_id' | 'invalid_category' | 'missing_field' | 'extra_field' | 'invalid_value';
+  type: 'invalid_id' | 'invalid_category' | 'missing_field' | 'extra_field' | 'invalid_value' | 'deleted_product_cleanup';
   productName?: string;
   originalId?: string;
   newId?: string;
@@ -160,6 +162,59 @@ function migrateProduct(product: any): { product: Product; issues: MigrationIssu
   };
 }
 
+// Функция для проверки и очистки удаленных системных продуктов
+export function cleanupDeletedSystemProducts(): { cleanedIds: string[]; issues: MigrationIssue[] } {
+  if (typeof window === 'undefined') {
+    return { cleanedIds: [], issues: [] };
+  }
+
+  try {
+    const stored = localStorage.getItem('deleted_system_products');
+    if (!stored) {
+      return { cleanedIds: [], issues: [] };
+    }
+
+    const deletedProductIds: string[] = JSON.parse(stored);
+    const systemProductIds = new Set(PRODUCTS_DATABASE.map(p => p.id));
+    
+    // Находим ID которые больше не существуют в системной базе
+    const validDeletedIds: string[] = [];
+    const invalidIds: string[] = [];
+    
+    for (const id of deletedProductIds) {
+      if (systemProductIds.has(id)) {
+        validDeletedIds.push(id);
+      } else {
+        invalidIds.push(id);
+      }
+    }
+    
+    const issues: MigrationIssue[] = [];
+    
+    // Если есть невалидные ID, сохраняем только валидные и создаем уведомления
+    if (invalidIds.length > 0) {
+      try {
+        localStorage.setItem('deleted_system_products', JSON.stringify(validDeletedIds));
+        
+        for (const invalidId of invalidIds) {
+          issues.push({
+            type: 'deleted_product_cleanup',
+            originalId: invalidId,
+            message: `Удален из списка скрытых несуществующий продукт с ID "${invalidId}"`
+          });
+        }
+      } catch (saveError) {
+        console.error('Ошибка при сохранении очищенного списка удаленных продуктов:', saveError);
+      }
+    }
+    
+    return { cleanedIds: invalidIds, issues };
+  } catch (error) {
+    console.error('Ошибка при очистке удаленных системных продуктов:', error);
+    return { cleanedIds: [], issues: [] };
+  }
+}
+
 // Основная функция миграции данных пользователя
 export function migrateUserProducts(rawData: any[]): MigrationResult {
   if (!Array.isArray(rawData)) {
@@ -244,7 +299,8 @@ export function formatMigrationReport(issues: MigrationIssue[]): string {
     invalid_category: '📂 Неверные категории',
     missing_field: '➕ Отсутствующие поля',
     extra_field: '➖ Лишние поля',
-    invalid_value: '⚠️ Некорректные значения'
+    invalid_value: '⚠️ Некорректные значения',
+    deleted_product_cleanup: '🧹 Очистка удаленных продуктов'
   };
 
   for (const [type, typeIssues] of Object.entries(groupedIssues)) {

@@ -37,7 +37,8 @@ export function MigrationNotification() {
   };
 
   return (
-    <div className="fixed top-4 right-4 max-w-md w-full bg-white border border-orange-200 shadow-lg rounded-lg p-4 z-50 max-[420px]:fixed max-[420px]:top-0 max-[420px]:right-0 max-[420px]:left-0 max-[420px]:bottom-0 max-[420px]:max-w-none max-[420px]:rounded-none max-[420px]:border-0 max-[420px]:flex max-[420px]:flex-col max-[420px]:p-6">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white border border-orange-200 shadow-lg rounded-lg p-4 w-full max-w-md max-[420px]:max-w-none max-[420px]:w-full max-[420px]:h-full max-[420px]:rounded-none max-[420px]:border-0 max-[420px]:flex max-[420px]:flex-col max-[420px]:p-6">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-orange-500 flex-shrink-0" />
@@ -82,6 +83,7 @@ export function MigrationNotification() {
         >
           Понятно, закрыть
         </button>
+      </div>
       </div>
     </div>
   );

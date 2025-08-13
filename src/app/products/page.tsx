@@ -6,6 +6,7 @@ import { BookOpen, Search, Info, Plus } from 'lucide-react';
 import { getAllCategories, getProductsByCategory, searchProducts, PRODUCT_CATEGORIES, Product, getAllProducts, saveUserProduct, deleteUserProduct, updateUserProduct, getCategoryKey } from '@/lib/products-data';
 import ProductCard from '@/components/ProductCard';
 import ProductModal from '@/components/ProductModal';
+import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 
 export default function ProductsPage() {
   const { data: session, status } = useSession();
@@ -16,6 +17,8 @@ export default function ProductsPage() {
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
   const [products, setProducts] = useState<Product[]>([]);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const infoRef = useRef<HTMLDivElement>(null);
 
   // Закрытие tooltip при клике вне его области
@@ -92,9 +95,17 @@ export default function ProductsPage() {
 
   const handleDeleteProduct = (productId: string) => {
     const product = products.find(p => p.id === productId);
-    if (product && confirm(`Вы уверены, что хотите удалить продукт "${product.name}"?`)) {
-      if (deleteUserProduct(productId)) {
+    if (product) {
+      setProductToDelete(product);
+      setIsDeleteModalOpen(true);
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (productToDelete) {
+      if (deleteUserProduct(productToDelete.id)) {
         setProducts(getAllProducts());
+        setProductToDelete(null);
       } else {
         alert('Произошла ошибка при удалении продукта');
       }
@@ -237,6 +248,17 @@ export default function ProductsPage() {
         onSubmit={handleModalSubmit}
         product={editingProduct}
         mode={modalMode}
+      />
+
+      {/* Модальное окно подтверждения удаления */}
+      <DeleteConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setProductToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        product={productToDelete}
       />
     </div>
   );

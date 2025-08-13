@@ -11,7 +11,7 @@ export interface Product {
 // Импортируем данные из отдельных файлов
 import { PRODUCT_CATEGORIES } from './ data/categories';
 import { PRODUCTS_DATABASE } from './ data/products';
-import { migrateUserProducts, formatMigrationReport, type MigrationResult } from './data-migration';
+import { migrateUserProducts, formatMigrationReport, cleanupDeletedSystemProducts, type MigrationResult } from './data-migration';
 
 // Экспортируем для совместимости с существующим кодом
 export { PRODUCT_CATEGORIES };
@@ -60,13 +60,20 @@ export function getUserProducts(): Product[] {
     const rawData = JSON.parse(stored);
     const migrationResult = migrateUserProducts(rawData);
     
+    // Проверяем и очищаем удаленные системные продукты
+    const cleanupResult = cleanupDeletedSystemProducts();
+    
+    // Объединяем проблемы миграции и очистки
+    const allIssues = [...migrationResult.issues, ...cleanupResult.issues];
+    const hasChanges = migrationResult.hasChanges || cleanupResult.cleanedIds.length > 0;
+    
     // Если были найдены проблемы, сохраняем исправленные данные и уведомляем пользователя
-    if (migrationResult.hasChanges) {
+    if (hasChanges) {
       try {
         localStorage.setItem(USER_PRODUCTS_KEY, JSON.stringify(migrationResult.migratedProducts));
         
         // Сохраняем отчет о миграции для показа пользователю
-        const report = formatMigrationReport(migrationResult.issues);
+        const report = formatMigrationReport(allIssues);
         localStorage.setItem('migration_report', JSON.stringify({
           timestamp: new Date().toISOString(),
           report
