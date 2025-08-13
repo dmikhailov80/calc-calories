@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Edit, Trash2 } from 'lucide-react';
-import { Product } from '@/lib/products-data';
+import { Product, getCategoryName } from '@/lib/products-data';
 import { Button } from '@/components/ui/button';
 
 interface ProductCardProps {
@@ -39,7 +39,7 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
         {/* Информация о продукте */}
         <div className="flex-1">
           <h3 className="font-semibold text-lg sm:text-xl text-foreground leading-tight">{product.name}</h3>
-          <p className="text-base text-muted-foreground mt-1">{product.category}</p>
+          <p className="text-base text-muted-foreground mt-1">{getCategoryName(product.category)}</p>
         </div>
         
         {/* Питательные данные */}

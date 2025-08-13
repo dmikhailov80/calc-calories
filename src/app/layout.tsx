@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./auth-provider";
 import MainNavigation from "@/components/MainNavigation";
+import { MigrationNotification } from "@/components/MigrationNotification";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,6 +36,7 @@ export default function RootLayout({
             <main className="lg:ml-64 pb-16 lg:pb-0">
               {children}
             </main>
+            <MigrationNotification />
           </div>
         </AuthProvider>
       </body>

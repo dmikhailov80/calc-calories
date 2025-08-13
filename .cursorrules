@@ -22,6 +22,8 @@ This is a Next.js application for tracking and calculating calories with authent
 - Use absolute imports when possible
 - Implement proper error handling
 - Ensure responsive design
+- Ensure that all ID are in the format of UUIDs for unique identification
+- All modals should take full screen on mobile (resolution below 420px)
 
 ## Project Structure
 - `src/app/` - Next.js app router pages and layouts

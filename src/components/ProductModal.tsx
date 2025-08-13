@@ -3,18 +3,22 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Product, PRODUCT_CATEGORIES } from '@/lib/products-data';
+import { Product, PRODUCT_CATEGORIES, getCategoryName, getCategoryKey } from '@/lib/products-data';
 
-interface AddProductModalProps {
+interface ProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (product: Omit<Product, 'id'>) => void;
+  onSubmit: (product: Omit<Product, 'id'>, productId?: string) => void;
+  product?: Product; // Если передан продукт, то режим редактирования
+  mode?: 'add' | 'edit';
 }
 
-export default function AddProductModal({ isOpen, onClose, onAdd }: AddProductModalProps) {
+export default function ProductModal({ isOpen, onClose, onSubmit, product, mode = 'add' }: ProductModalProps) {
+  const isEditMode = mode === 'edit' && product;
+
   const [formData, setFormData] = useState({
     name: '',
-    category: PRODUCT_CATEGORIES.UNCATEGORIZED,
+    category: PRODUCT_CATEGORIES.UNCATEGORIZED.key,
     calories: '',
     protein: '',
     fat: '',
@@ -22,6 +26,32 @@ export default function AddProductModal({ isOpen, onClose, onAdd }: AddProductMo
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  // Заполняем форму данными продукта при открытии в режиме редактирования
+  useEffect(() => {
+    if (isOpen) {
+      if (isEditMode) {
+        setFormData({
+          name: product.name,
+          category: product.category,
+          calories: product.calories.toString(),
+          protein: product.protein.toString(),
+          fat: product.fat.toString(),
+          carbs: product.carbs.toString()
+        });
+      } else {
+        // Сбрасываем форму для режима добавления
+        setFormData({
+          name: '',
+          category: PRODUCT_CATEGORIES.UNCATEGORIZED.key,
+          calories: '',
+          protein: '',
+          fat: '',
+          carbs: ''
+        });
+      }
+    }
+  }, [isOpen, isEditMode, product]);
 
   // Обработка нажатия клавиши Esc
   useEffect(() => {
@@ -89,7 +119,7 @@ export default function AddProductModal({ isOpen, onClose, onAdd }: AddProductMo
       return;
     }
 
-    const newProduct: Omit<Product, 'id'> = {
+    const productData: Omit<Product, 'id'> = {
       name: formData.name.trim(),
       category: formData.category,
       calories: Number(formData.calories),
@@ -98,14 +128,14 @@ export default function AddProductModal({ isOpen, onClose, onAdd }: AddProductMo
       carbs: Number(formData.carbs)
     };
 
-    onAdd(newProduct);
+    onSubmit(productData, isEditMode ? product.id : undefined);
     handleClose();
   };
 
   const handleClose = () => {
     setFormData({
       name: '',
-      category: PRODUCT_CATEGORIES.UNCATEGORIZED,
+      category: PRODUCT_CATEGORIES.UNCATEGORIZED.key,
       calories: '',
       protein: '',
       fat: '',
@@ -116,6 +146,9 @@ export default function AddProductModal({ isOpen, onClose, onAdd }: AddProductMo
   };
 
   if (!isOpen) return null;
+
+  const title = isEditMode ? 'Редактировать продукт' : 'Добавить продукт';
+  const submitButtonText = isEditMode ? 'Сохранить изменения' : 'Добавить продукт';
 
   return (
     <div 
@@ -128,7 +161,7 @@ export default function AddProductModal({ isOpen, onClose, onAdd }: AddProductMo
       >
         {/* Заголовок */}
         <div className="flex items-center justify-between p-4 min-[420px]:p-6 border-b">
-          <h2 className="text-xl font-semibold text-foreground">Добавить продукт</h2>
+          <h2 className="text-xl font-semibold text-foreground">{title}</h2>
           <button
             onClick={handleClose}
             className="p-1 rounded-full hover:bg-secondary transition-colors"
@@ -171,8 +204,8 @@ export default function AddProductModal({ isOpen, onClose, onAdd }: AddProductMo
               className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             >
               {Object.values(PRODUCT_CATEGORIES).map((category) => (
-                <option key={category} value={category}>
-                  {category}
+                <option key={category.key} value={category.key}>
+                  {category.name}
                 </option>
               ))}
             </select>
@@ -286,7 +319,7 @@ export default function AddProductModal({ isOpen, onClose, onAdd }: AddProductMo
               type="submit"
               className="flex-1"
             >
-              Добавить продукт
+              {submitButtonText}
             </Button>
           </div>
         </form>

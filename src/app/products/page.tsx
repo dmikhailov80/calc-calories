@@ -3,16 +3,18 @@
 import { useSession } from 'next-auth/react';
 import { useState, useEffect, useRef } from 'react';
 import { BookOpen, Search, Info, Plus } from 'lucide-react';
-import { getAllCategories, getProductsByCategory, searchProducts, PRODUCT_CATEGORIES, Product, getAllProducts, saveUserProduct, deleteUserProduct } from '@/lib/products-data';
+import { getAllCategories, getProductsByCategory, searchProducts, PRODUCT_CATEGORIES, Product, getAllProducts, saveUserProduct, deleteUserProduct, updateUserProduct, getCategoryKey } from '@/lib/products-data';
 import ProductCard from '@/components/ProductCard';
-import AddProductModal from '@/components/AddProductModal';
+import ProductModal from '@/components/ProductModal';
 
 export default function ProductsPage() {
   const { data: session, status } = useSession();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showInfo, setShowInfo] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+  const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
   const [products, setProducts] = useState<Product[]>([]);
   const infoRef = useRef<HTMLDivElement>(null);
 
@@ -71,7 +73,8 @@ export default function ProductsPage() {
     }
     
     if (selectedCategory !== 'all') {
-      filteredProducts = filteredProducts.filter(product => product.category === selectedCategory);
+      const categoryKey = getCategoryKey(selectedCategory);
+      filteredProducts = filteredProducts.filter(product => product.category === categoryKey);
     }
     
     return filteredProducts;
@@ -82,8 +85,9 @@ export default function ProductsPage() {
 
   // Обработчики для управления продуктами
   const handleEditProduct = (product: Product) => {
-    // TODO: Реализовать модальное окно для редактирования продукта
-    alert(`Редактирование продукта: ${product.name}\nЭта функция будет реализована в следующих обновлениях.`);
+    setEditingProduct(product);
+    setModalMode('edit');
+    setIsModalOpen(true);
   };
 
   const handleDeleteProduct = (productId: string) => {
@@ -97,13 +101,29 @@ export default function ProductsPage() {
     }
   };
 
-  const handleAddProduct = (newProduct: Omit<Product, 'id'>) => {
+  const handleModalSubmit = (productData: Omit<Product, 'id'>, productId?: string) => {
     try {
-      saveUserProduct(newProduct);
+      if (modalMode === 'edit' && productId) {
+        // Режим редактирования
+        const result = updateUserProduct(productId, productData);
+        if (!result) {
+          alert('Произошла ошибка при обновлении продукта');
+          return;
+        }
+      } else {
+        // Режим добавления
+        saveUserProduct(productData);
+      }
       setProducts(getAllProducts());
     } catch (error) {
-      alert('Произошла ошибка при добавлении продукта');
+      alert(`Произошла ошибка при ${modalMode === 'edit' ? 'обновлении' : 'добавлении'} продукта`);
     }
+  };
+
+  const handleOpenAddModal = () => {
+    setModalMode('add');
+    setEditingProduct(undefined);
+    setIsModalOpen(true);
   };
 
   return (
@@ -118,7 +138,7 @@ export default function ProductsPage() {
         <div className="flex items-center space-x-2">
           {/* Кнопка добавления продукта */}
           <button
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={handleOpenAddModal}
             className="flex items-center justify-center sm:justify-start sm:space-x-2 px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
             aria-label="Добавить продукт"
           >
@@ -207,11 +227,16 @@ export default function ProductsPage() {
         )}
       </div>
 
-      {/* Модальное окно добавления продукта */}
-      <AddProductModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAdd={handleAddProduct}
+      {/* Универсальное модальное окно для продуктов */}
+      <ProductModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingProduct(undefined);
+        }}
+        onSubmit={handleModalSubmit}
+        product={editingProduct}
+        mode={modalMode}
       />
     </div>
   );
