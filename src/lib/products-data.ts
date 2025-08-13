@@ -9,6 +9,7 @@ export interface Product {
 }
 
 export const PRODUCT_CATEGORIES = {
+  UNCATEGORIZED: 'Без категории',
   DAIRY: 'Молочные продукты',
   MEAT_FISH: 'Мясо и рыба',
   CEREALS: 'Крупы, хлеб, мука',
@@ -110,7 +111,154 @@ export function getProductById(id: string): Product | undefined {
 
 export function searchProducts(query: string): Product[] {
   const lowercaseQuery = query.toLowerCase();
-  return PRODUCTS_DATA.filter(product => 
+  const allProducts = getAllProducts();
+  return allProducts.filter(product => 
     product.name.toLowerCase().includes(lowercaseQuery)
   );
+}
+
+// Функции для работы с пользовательскими продуктами в localStorage
+const USER_PRODUCTS_KEY = 'user_products';
+
+export function getUserProducts(): Product[] {
+  if (typeof window === 'undefined') return [];
+  
+  try {
+    const stored = localStorage.getItem(USER_PRODUCTS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.error('Ошибка при загрузке пользовательских продуктов:', error);
+    return [];
+  }
+}
+
+export function saveUserProduct(product: Omit<Product, 'id'>): Product {
+  const userProducts = getUserProducts();
+  const newId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const newProduct: Product = {
+    ...product,
+    id: newId
+  };
+  
+  const updatedProducts = [...userProducts, newProduct];
+  
+  try {
+    localStorage.setItem(USER_PRODUCTS_KEY, JSON.stringify(updatedProducts));
+    return newProduct;
+  } catch (error) {
+    console.error('Ошибка при сохранении продукта:', error);
+    throw new Error('Не удалось сохранить продукт');
+  }
+}
+
+export function deleteUserProduct(productId: string): boolean {
+  // Если это системный продукт, помечаем его как удаленный
+  if (!isUserProduct(productId)) {
+    const deletedProducts = getDeletedSystemProducts();
+    if (!deletedProducts.includes(productId)) {
+      deletedProducts.push(productId);
+      try {
+        localStorage.setItem('deleted_system_products', JSON.stringify(deletedProducts));
+        return true;
+      } catch (error) {
+        console.error('Ошибка при удалении системного продукта:', error);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // Если это пользовательский продукт, удаляем его физически
+  const userProducts = getUserProducts();
+  const filteredProducts = userProducts.filter(p => p.id !== productId);
+  
+  try {
+    localStorage.setItem(USER_PRODUCTS_KEY, JSON.stringify(filteredProducts));
+    return true;
+  } catch (error) {
+    console.error('Ошибка при удалении продукта:', error);
+    return false;
+  }
+}
+
+function getDeletedSystemProducts(): string[] {
+  if (typeof window === 'undefined') return [];
+  
+  try {
+    const stored = localStorage.getItem('deleted_system_products');
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.error('Ошибка при загрузке удаленных системных продуктов:', error);
+    return [];
+  }
+}
+
+export function updateUserProduct(productId: string, updatedProduct: Omit<Product, 'id'>): Product | null {
+  // Если это системный продукт, создаем модифицированную версию
+  if (!isUserProduct(productId)) {
+    const modifiedProducts = getModifiedSystemProducts();
+    const updated: Product = {
+      ...updatedProduct,
+      id: productId
+    };
+    
+    modifiedProducts[productId] = updated;
+    
+    try {
+      localStorage.setItem('modified_system_products', JSON.stringify(modifiedProducts));
+      return updated;
+    } catch (error) {
+      console.error('Ошибка при обновлении системного продукта:', error);
+      return null;
+    }
+  }
+
+  // Если это пользовательский продукт, обновляем как обычно
+  const userProducts = getUserProducts();
+  const productIndex = userProducts.findIndex(p => p.id === productId);
+  
+  if (productIndex === -1) return null;
+  
+  const updated: Product = {
+    ...updatedProduct,
+    id: productId
+  };
+  
+  userProducts[productIndex] = updated;
+  
+  try {
+    localStorage.setItem(USER_PRODUCTS_KEY, JSON.stringify(userProducts));
+    return updated;
+  } catch (error) {
+    console.error('Ошибка при обновлении продукта:', error);
+    return null;
+  }
+}
+
+function getModifiedSystemProducts(): { [key: string]: Product } {
+  if (typeof window === 'undefined') return {};
+  
+  try {
+    const stored = localStorage.getItem('modified_system_products');
+    return stored ? JSON.parse(stored) : {};
+  } catch (error) {
+    console.error('Ошибка при загрузке модифицированных системных продуктов:', error);
+    return {};
+  }
+}
+
+export function getAllProducts(): Product[] {
+  const deletedSystemProducts = getDeletedSystemProducts();
+  const modifiedSystemProducts = getModifiedSystemProducts();
+  
+  // Фильтруем удаленные системные продукты и применяем модификации
+  const processedSystemProducts = PRODUCTS_DATA
+    .filter(p => !deletedSystemProducts.includes(p.id))
+    .map(p => modifiedSystemProducts[p.id] || p);
+  
+  return [...processedSystemProducts, ...getUserProducts()];
+}
+
+export function isUserProduct(productId: string): boolean {
+  return productId.startsWith('user_');
 }

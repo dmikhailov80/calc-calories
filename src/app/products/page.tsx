@@ -3,14 +3,17 @@
 import { useSession } from 'next-auth/react';
 import { useState, useEffect, useRef } from 'react';
 import { BookOpen, Search, Info, Plus } from 'lucide-react';
-import { PRODUCTS_DATA, getAllCategories, getProductsByCategory, searchProducts, PRODUCT_CATEGORIES, Product } from '@/lib/products-data';
+import { getAllCategories, getProductsByCategory, searchProducts, PRODUCT_CATEGORIES, Product, getAllProducts, saveUserProduct, deleteUserProduct } from '@/lib/products-data';
 import ProductCard from '@/components/ProductCard';
+import AddProductModal from '@/components/AddProductModal';
 
 export default function ProductsPage() {
   const { data: session, status } = useSession();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showInfo, setShowInfo] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
   const infoRef = useRef<HTMLDivElement>(null);
 
   // Закрытие tooltip при клике вне его области
@@ -28,6 +31,11 @@ export default function ProductsPage() {
       };
     }
   }, [showInfo]);
+
+  // Загрузка всех продуктов при монтировании компонента
+  useEffect(() => {
+    setProducts(getAllProducts());
+  }, []);
 
   if (status === 'loading') {
     return (
@@ -53,17 +61,20 @@ export default function ProductsPage() {
 
   // Фильтрация продуктов
   const getFilteredProducts = () => {
-    let products = PRODUCTS_DATA;
+    let filteredProducts = products;
     
     if (searchQuery) {
-      products = searchProducts(searchQuery);
+      const lowercaseQuery = searchQuery.toLowerCase();
+      filteredProducts = products.filter(product => 
+        product.name.toLowerCase().includes(lowercaseQuery)
+      );
     }
     
     if (selectedCategory !== 'all') {
-      products = products.filter(product => product.category === selectedCategory);
+      filteredProducts = filteredProducts.filter(product => product.category === selectedCategory);
     }
     
-    return products;
+    return filteredProducts;
   };
 
   const filteredProducts = getFilteredProducts();
@@ -76,16 +87,23 @@ export default function ProductsPage() {
   };
 
   const handleDeleteProduct = (productId: string) => {
-    // TODO: Реализовать подтверждение удаления и API вызов
-    const product = PRODUCTS_DATA.find(p => p.id === productId);
+    const product = products.find(p => p.id === productId);
     if (product && confirm(`Вы уверены, что хотите удалить продукт "${product.name}"?`)) {
-      alert(`Удаление продукта с ID: ${productId}\nЭта функция будет реализована в следующих обновлениях.`);
+      if (deleteUserProduct(productId)) {
+        setProducts(getAllProducts());
+      } else {
+        alert('Произошла ошибка при удалении продукта');
+      }
     }
   };
 
-  const handleAddProduct = () => {
-    // TODO: Реализовать модальное окно для добавления нового продукта
-    alert(`Добавление нового продукта\nЭта функция будет реализована в следующих обновлениях.`);
+  const handleAddProduct = (newProduct: Omit<Product, 'id'>) => {
+    try {
+      saveUserProduct(newProduct);
+      setProducts(getAllProducts());
+    } catch (error) {
+      alert('Произошла ошибка при добавлении продукта');
+    }
   };
 
   return (
@@ -100,7 +118,7 @@ export default function ProductsPage() {
         <div className="flex items-center space-x-2">
           {/* Кнопка добавления продукта */}
           <button
-            onClick={handleAddProduct}
+            onClick={() => setIsAddModalOpen(true)}
             className="flex items-center justify-center sm:justify-start sm:space-x-2 px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
             aria-label="Добавить продукт"
           >
@@ -189,6 +207,12 @@ export default function ProductsPage() {
         )}
       </div>
 
+      {/* Модальное окно добавления продукта */}
+      <AddProductModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAdd={handleAddProduct}
+      />
     </div>
   );
 }
