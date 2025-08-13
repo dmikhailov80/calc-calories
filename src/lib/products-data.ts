@@ -238,6 +238,35 @@ export function isUserProduct(productId: string): boolean {
   return !isSystemProduct;
 }
 
+export function isModifiedSystemProduct(productId: string): boolean {
+  // Проверяем, является ли это системным продуктом, который был изменен пользователем
+  if (isUserProduct(productId)) return false; // Это пользовательский продукт, не системный
+  
+  const userProducts = getUserProducts();
+  return userProducts.some(p => p.id === productId);
+}
+
+export function getOriginalSystemProduct(productId: string): Product | null {
+  // Возвращает оригинальную версию системного продукта
+  return PRODUCTS_DATABASE.find(p => p.id === productId) || null;
+}
+
+export function resetSystemProduct(productId: string): boolean {
+  // Сбрасывает системный продукт к оригинальному состоянию
+  if (isUserProduct(productId)) return false; // Нельзя сбросить пользовательский продукт
+  
+  const userProducts = getUserProducts();
+  const filteredProducts = userProducts.filter(p => p.id !== productId);
+  
+  try {
+    localStorage.setItem(USER_PRODUCTS_KEY, JSON.stringify(filteredProducts));
+    return true;
+  } catch (error) {
+    console.error('Ошибка при сбросе системного продукта:', error);
+    return false;
+  }
+}
+
 // Функции для работы с отчетами о миграции
 export interface MigrationReportData {
   timestamp: string;

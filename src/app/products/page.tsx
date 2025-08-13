@@ -3,10 +3,11 @@
 import { useSession } from 'next-auth/react';
 import { useState, useEffect, useRef } from 'react';
 import { BookOpen, Search, Info, Plus } from 'lucide-react';
-import { getAllCategories, getProductsByCategory, searchProducts, PRODUCT_CATEGORIES, Product, getAllProducts, saveUserProduct, deleteUserProduct, updateUserProduct, getCategoryKey } from '@/lib/products-data';
+import { getAllCategories, getProductsByCategory, searchProducts, PRODUCT_CATEGORIES, Product, getAllProducts, saveUserProduct, deleteUserProduct, updateUserProduct, getCategoryKey, resetSystemProduct, getOriginalSystemProduct } from '@/lib/products-data';
 import ProductCard from '@/components/ProductCard';
 import ProductModal from '@/components/ProductModal';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
+import ResetConfirmModal from '@/components/ResetConfirmModal';
 
 export default function ProductsPage() {
   const { data: session, status } = useSession();
@@ -19,6 +20,9 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [productToReset, setProductToReset] = useState<Product | null>(null);
+  const [originalProductForReset, setOriginalProductForReset] = useState<Product | null>(null);
   const infoRef = useRef<HTMLDivElement>(null);
 
   // Закрытие tooltip при клике вне его области
@@ -108,6 +112,29 @@ export default function ProductsPage() {
         setProductToDelete(null);
       } else {
         alert('Произошла ошибка при удалении продукта');
+      }
+    }
+  };
+
+  const handleResetProduct = (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    const originalProduct = getOriginalSystemProduct(productId);
+    
+    if (product && originalProduct) {
+      setProductToReset(product);
+      setOriginalProductForReset(originalProduct);
+      setIsResetModalOpen(true);
+    }
+  };
+
+  const handleConfirmReset = () => {
+    if (productToReset) {
+      if (resetSystemProduct(productToReset.id)) {
+        setProducts(getAllProducts());
+        setProductToReset(null);
+        setOriginalProductForReset(null);
+      } else {
+        alert('Произошла ошибка при сбросе продукта');
       }
     }
   };
@@ -233,6 +260,7 @@ export default function ProductsPage() {
               product={product} 
               onEdit={handleEditProduct}
               onDelete={handleDeleteProduct}
+              onReset={handleResetProduct}
             />
           ))
         )}
@@ -259,6 +287,19 @@ export default function ProductsPage() {
         }}
         onConfirm={handleConfirmDelete}
         product={productToDelete}
+      />
+
+      {/* Модальное окно подтверждения сброса */}
+      <ResetConfirmModal
+        isOpen={isResetModalOpen}
+        onClose={() => {
+          setIsResetModalOpen(false);
+          setProductToReset(null);
+          setOriginalProductForReset(null);
+        }}
+        onConfirm={handleConfirmReset}
+        product={productToReset}
+        originalProduct={originalProductForReset}
       />
     </div>
   );
