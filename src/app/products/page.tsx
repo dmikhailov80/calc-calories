@@ -1,9 +1,10 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useState, useEffect, useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { BookOpen, Search, Info, Plus } from 'lucide-react';
-import { getAllCategories, getProductsByCategory, searchProducts, PRODUCT_CATEGORIES, Product, getAllProducts, saveUserProduct, deleteUserProduct, updateUserProduct, getCategoryKey, resetSystemProduct, getOriginalSystemProduct } from '@/lib/products-data';
+import { Product } from '@/lib/products-data';
+import { useProducts, useProductFilters, useProductModal, useConfirmModal, useInfoTooltip } from '@/hooks';
 import ProductCard from '@/components/ProductCard';
 import ProductModal from '@/components/ProductModal';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
@@ -11,42 +12,51 @@ import ResetConfirmModal from '@/components/ResetConfirmModal';
 
 export default function ProductsPage() {
   const { data: session, status } = useSession();
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showInfo, setShowInfo] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
-  const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
-  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
-  const [productToReset, setProductToReset] = useState<Product | null>(null);
-  const [originalProductForReset, setOriginalProductForReset] = useState<Product | null>(null);
-  const infoRef = useRef<HTMLDivElement>(null);
+  
+  // Custom hooks для управления состоянием
+  const { 
+    products, 
+    loading: productsLoading, 
+    error: productsError,
+    addProduct, 
+    updateProduct, 
+    deleteProduct, 
+    resetProduct, 
+    getOriginalProduct 
+  } = useProducts();
+  
+  const { 
+    filteredProducts, 
+    categories, 
+    filters,
+    setSearchQuery, 
+    setSelectedCategory 
+  } = useProductFilters(products);
+  
+  const { 
+    modalState, 
+    openAddModal, 
+    openEditModal, 
+    closeModal, 
+    isEditMode 
+  } = useProductModal();
+  
+  const { 
+    deleteModal, 
+    resetModal, 
+    openDeleteModal, 
+    openResetModal, 
+    closeDeleteModal, 
+    closeResetModal 
+  } = useConfirmModal();
 
-  // Закрытие tooltip при клике вне его области
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (infoRef.current && !infoRef.current.contains(event.target as Node)) {
-        setShowInfo(false);
-      }
-    }
+  const {
+    showInfo,
+    toggleInfo,
+    infoRef
+  } = useInfoTooltip();
 
-    if (showInfo) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }
-  }, [showInfo]);
-
-  // Загрузка всех продуктов при монтировании компонента
-  useEffect(() => {
-    setProducts(getAllProducts());
-  }, []);
-
-  if (status === 'loading') {
+  if (status === 'loading' || productsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -68,48 +78,23 @@ export default function ProductsPage() {
     );
   }
 
-  // Фильтрация продуктов
-  const getFilteredProducts = () => {
-    let filteredProducts = products;
-    
-    if (searchQuery) {
-      const lowercaseQuery = searchQuery.toLowerCase();
-      filteredProducts = products.filter(product => 
-        product.name.toLowerCase().includes(lowercaseQuery)
-      );
-    }
-    
-    if (selectedCategory !== 'all') {
-      const categoryKey = getCategoryKey(selectedCategory);
-      filteredProducts = filteredProducts.filter(product => product.category === categoryKey);
-    }
-    
-    return filteredProducts;
-  };
-
-  const filteredProducts = getFilteredProducts();
-  const categories = getAllCategories();
-
   // Обработчики для управления продуктами
   const handleEditProduct = (product: Product) => {
-    setEditingProduct(product);
-    setModalMode('edit');
-    setIsModalOpen(true);
+    openEditModal(product);
   };
 
   const handleDeleteProduct = (productId: string) => {
     const product = products.find(p => p.id === productId);
     if (product) {
-      setProductToDelete(product);
-      setIsDeleteModalOpen(true);
+      openDeleteModal(product);
     }
   };
 
-  const handleConfirmDelete = () => {
-    if (productToDelete) {
-      if (deleteUserProduct(productToDelete.id)) {
-        setProducts(getAllProducts());
-        setProductToDelete(null);
+  const handleConfirmDelete = async () => {
+    if (deleteModal.product) {
+      const success = await deleteProduct(deleteModal.product.id);
+      if (success) {
+        closeDeleteModal();
       } else {
         alert('Произошла ошибка при удалении продукта');
       }
@@ -118,50 +103,40 @@ export default function ProductsPage() {
 
   const handleResetProduct = (productId: string) => {
     const product = products.find(p => p.id === productId);
-    const originalProduct = getOriginalSystemProduct(productId);
+    const originalProduct = getOriginalProduct(productId);
     
     if (product && originalProduct) {
-      setProductToReset(product);
-      setOriginalProductForReset(originalProduct);
-      setIsResetModalOpen(true);
+      openResetModal(product, originalProduct);
     }
   };
 
-  const handleConfirmReset = () => {
-    if (productToReset) {
-      if (resetSystemProduct(productToReset.id)) {
-        setProducts(getAllProducts());
-        setProductToReset(null);
-        setOriginalProductForReset(null);
+  const handleConfirmReset = async () => {
+    if (resetModal.product) {
+      const success = await resetProduct(resetModal.product.id);
+      if (success) {
+        closeResetModal();
       } else {
         alert('Произошла ошибка при сбросе продукта');
       }
     }
   };
 
-  const handleModalSubmit = (productData: Omit<Product, 'id'>, productId?: string) => {
-    try {
-      if (modalMode === 'edit' && productId) {
-        // Режим редактирования
-        const result = updateUserProduct(productId, productData);
-        if (!result) {
-          alert('Произошла ошибка при обновлении продукта');
-          return;
-        }
-      } else {
-        // Режим добавления
-        saveUserProduct(productData);
-      }
-      setProducts(getAllProducts());
-    } catch (error) {
-      alert(`Произошла ошибка при ${modalMode === 'edit' ? 'обновлении' : 'добавлении'} продукта`);
+  const handleModalSubmit = async (productData: Omit<Product, 'id'>, productId?: string) => {
+    let success = false;
+    
+    if (isEditMode && productId) {
+      // Режим редактирования
+      const result = await updateProduct(productId, productData);
+      success = result !== null;
+    } else {
+      // Режим добавления
+      const result = await addProduct(productData);
+      success = result !== null;
     }
-  };
-
-  const handleOpenAddModal = () => {
-    setModalMode('add');
-    setEditingProduct(undefined);
-    setIsModalOpen(true);
+    
+    if (success) {
+      closeModal();
+    }
   };
 
   return (
@@ -176,7 +151,7 @@ export default function ProductsPage() {
         <div className="flex items-center space-x-2">
           {/* Кнопка добавления продукта */}
           <button
-            onClick={handleOpenAddModal}
+            onClick={openAddModal}
             className="flex items-center justify-center sm:justify-start sm:space-x-2 px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
             aria-label="Добавить продукт"
           >
@@ -187,7 +162,7 @@ export default function ProductsPage() {
           {/* Информационная иконка */}
           <div className="relative" ref={infoRef}>
             <button
-              onClick={() => setShowInfo(!showInfo)}
+              onClick={toggleInfo}
               className="p-2 rounded-full hover:bg-secondary transition-colors"
               aria-label="Информация о показателях"
             >
@@ -205,6 +180,13 @@ export default function ProductsPage() {
         </div>
       </div>
 
+      {/* Отображение ошибок */}
+      {productsError && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-800 text-sm">{productsError}</p>
+        </div>
+      )}
+
       {/* Поиск и фильтры */}
       <div className="mb-6 space-y-4">
         {/* Поиск */}
@@ -213,7 +195,7 @@ export default function ProductsPage() {
           <input
             type="text"
             placeholder="Поиск продуктов..."
-            value={searchQuery}
+            value={filters.searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
           />
@@ -224,7 +206,7 @@ export default function ProductsPage() {
           <button
             onClick={() => setSelectedCategory('all')}
             className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-              selectedCategory === 'all'
+              filters.selectedCategory === 'all'
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
             }`}
@@ -236,7 +218,7 @@ export default function ProductsPage() {
               key={category}
               onClick={() => setSelectedCategory(category)}
               className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                selectedCategory === category
+                filters.selectedCategory === category
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
               }`}
@@ -268,38 +250,28 @@ export default function ProductsPage() {
 
       {/* Универсальное модальное окно для продуктов */}
       <ProductModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingProduct(undefined);
-        }}
+        isOpen={modalState.isOpen}
+        onClose={closeModal}
         onSubmit={handleModalSubmit}
-        product={editingProduct}
-        mode={modalMode}
+        product={modalState.editingProduct}
+        mode={modalState.mode}
       />
 
       {/* Модальное окно подтверждения удаления */}
       <DeleteConfirmModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => {
-          setIsDeleteModalOpen(false);
-          setProductToDelete(null);
-        }}
+        isOpen={deleteModal.isOpen}
+        onClose={closeDeleteModal}
         onConfirm={handleConfirmDelete}
-        product={productToDelete}
+        product={deleteModal.product}
       />
 
       {/* Модальное окно подтверждения сброса */}
       <ResetConfirmModal
-        isOpen={isResetModalOpen}
-        onClose={() => {
-          setIsResetModalOpen(false);
-          setProductToReset(null);
-          setOriginalProductForReset(null);
-        }}
+        isOpen={resetModal.isOpen}
+        onClose={closeResetModal}
         onConfirm={handleConfirmReset}
-        product={productToReset}
-        originalProduct={originalProductForReset}
+        product={resetModal.product}
+        originalProduct={resetModal.originalProduct || null}
       />
     </div>
   );
