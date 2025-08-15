@@ -1,24 +1,112 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { ChefHat, Search, Plus } from 'lucide-react';
-import { useRecipes } from '@/hooks/useRecipes';
+import { ChefHat, Search, Plus, Trash2 } from 'lucide-react';
+import { useRecipes, useRecipeModal, useConfirmModal } from '@/hooks';
 import { RecipeCard } from '@/components/RecipeCard';
 import { RecipeDetails } from '@/components/RecipeDetails';
-import { Recipe } from '@/lib/recipes-data';
+import RecipeModal from '@/components/RecipeModal';
+import DeleteConfirmModal from '@/components/DeleteConfirmModal';
+import { Switch } from '@/components/ui/switch';
+import { Recipe, getDeletedRecipesCount } from '@/lib/recipes-data';
 
 export default function RecipesPage() {
   const { data: session, status } = useSession();
-  const { recipes, loading, error, calculateNutrition } = useRecipes();
+  const { 
+    recipes, 
+    loading, 
+    error,
+    showDeleted,
+    setShowDeleted, 
+    addRecipe, 
+    updateRecipe, 
+    deleteRecipe,
+    resetRecipe,
+    restoreRecipe, 
+    calculateNutrition 
+  } = useRecipes();
+  
+  const { 
+    modalState, 
+    openAddModal, 
+    openEditModal, 
+    closeModal, 
+    isEditMode 
+  } = useRecipeModal();
+  
+  const { 
+    deleteModal, 
+    openDeleteModal, 
+    closeDeleteModal 
+  } = useConfirmModal();
+  
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Подсчет удаленных рецептов
+  const deletedCount = getDeletedRecipesCount();
 
   // Фильтрация рецептов по поисковому запросу
   const filteredRecipes = recipes.filter(recipe =>
     recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     recipe.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Мемоизированные обработчики для управления рецептами
+  const handleEditRecipe = useCallback((recipe: Recipe) => {
+    openEditModal(recipe);
+  }, [openEditModal]);
+
+  const handleDeleteRecipe = useCallback((recipeId: string) => {
+    const recipe = recipes.find(r => r.id === recipeId);
+    if (recipe) {
+      openDeleteModal(recipe);
+    }
+  }, [recipes, openDeleteModal]);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (deleteModal.product) {
+      const success = await deleteRecipe(deleteModal.product.id);
+      if (success) {
+        closeDeleteModal();
+      } else {
+        alert('Произошла ошибка при удалении рецепта');
+      }
+    }
+  }, [deleteModal.product, deleteRecipe, closeDeleteModal]);
+
+  const handleResetRecipe = useCallback(async (recipeId: string) => {
+    const success = await resetRecipe(recipeId);
+    if (!success) {
+      alert('Произошла ошибка при сбросе рецепта');
+    }
+  }, [resetRecipe]);
+
+  const handleRestoreRecipe = useCallback(async (recipeId: string) => {
+    const success = await restoreRecipe(recipeId);
+    if (!success) {
+      alert('Произошла ошибка при восстановлении рецепта');
+    }
+  }, [restoreRecipe]);
+
+  const handleModalSubmit = useCallback(async (recipeData: Omit<Recipe, 'id'>, recipeId?: string) => {
+    let success = false;
+    
+    if (isEditMode && recipeId) {
+      // Режим редактирования
+      const result = await updateRecipe(recipeId, recipeData);
+      success = result !== null;
+    } else {
+      // Режим добавления
+      const result = await addRecipe(recipeData);
+      success = result !== null;
+    }
+    
+    if (success) {
+      closeModal();
+    }
+  }, [isEditMode, updateRecipe, addRecipe, closeModal]);
 
   if (status === 'loading') {
     return (
@@ -81,17 +169,41 @@ export default function RecipesPage() {
           <h1 className="text-3xl font-bold text-foreground">Рецепты</h1>
         </div>
         
-        {/* Кнопка добавления рецепта (пока заглушка) */}
-        <button 
-          className="flex items-center space-x-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-          onClick={() => {
-            // TODO: Добавить функционал создания рецепта
-            alert('Функционал создания рецептов будет добавлен в следующих обновлениях');
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          <span>Создать рецепт</span>
-        </button>
+        {/* Кнопки управления */}
+        <div className="flex items-center space-x-3">
+          {/* Переключатель показа удалённых рецептов */}
+          <div className="flex items-center space-x-2">
+            <label htmlFor="show-deleted-recipes" className="flex items-center space-x-2 cursor-pointer">
+              <Switch
+                id="show-deleted-recipes"
+                checked={showDeleted}
+                onCheckedChange={setShowDeleted}
+                className="data-[state=checked]:bg-red-500"
+              />
+              <span className="text-sm font-medium text-muted-foreground flex items-center space-x-1">
+                <Trash2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Удалённые</span>
+                {deletedCount > 0 && (
+                  <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">
+                    {deletedCount}
+                  </span>
+                )}
+              </span>
+            </label>
+          </div>
+
+          {/* Кнопка добавления рецепта - показываем только если не показываем удаленные */}
+          {!showDeleted && (
+            <button 
+              className="flex items-center space-x-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+              onClick={openAddModal}
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Создать рецепт</span>
+              <Plus className="h-4 w-4 sm:hidden" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Поиск */}
@@ -115,6 +227,10 @@ export default function RecipesPage() {
               recipe={recipe}
               nutrition={calculateNutrition(recipe)}
               onClick={() => setSelectedRecipe(recipe)}
+              onEdit={handleEditRecipe}
+              onDelete={handleDeleteRecipe}
+              onReset={handleResetRecipe}
+              onRestore={handleRestoreRecipe}
             />
           ))}
         </div>
@@ -128,6 +244,15 @@ export default function RecipesPage() {
               </h3>
               <p className="text-muted-foreground">
                 Попробуйте изменить поисковый запрос
+              </p>
+            </>
+          ) : showDeleted ? (
+            <>
+              <h3 className="text-lg font-medium text-foreground mb-2">
+                Удалённых рецептов нет
+              </h3>
+              <p className="text-muted-foreground">
+                Удалённые системные рецепты будут отображаться здесь
               </p>
             </>
           ) : (
@@ -156,6 +281,23 @@ export default function RecipesPage() {
           </div>
         </div>
       )}
+
+      {/* Модальное окно для создания/редактирования рецепта */}
+      <RecipeModal
+        isOpen={modalState.isOpen}
+        onClose={closeModal}
+        onSubmit={handleModalSubmit}
+        recipe={modalState.editingRecipe}
+        mode={modalState.mode}
+      />
+
+      {/* Модальное окно подтверждения удаления */}
+      <DeleteConfirmModal
+        isOpen={deleteModal.isOpen}
+        onClose={closeDeleteModal}
+        onConfirm={handleConfirmDelete}
+        product={deleteModal.product}
+      />
     </div>
   );
 }

@@ -4,11 +4,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { 
   Recipe, 
   RecipeNutrition,
-  getAllRecipes, 
+  getAllRecipes,
+  getAllRecipesWithDeleted,
+  getDeletedRecipes,
   saveUserRecipe, 
   updateUserRecipe, 
-  deleteUserRecipe, 
+  deleteUserRecipe,
+  resetSystemRecipe,
+  restoreSystemRecipe,
   getRecipeById,
+  getOriginalSystemRecipe,
   calculateRecipeNutrition
 } from '@/lib/recipes-data';
 
@@ -16,11 +21,16 @@ export interface UseRecipesReturn {
   recipes: Recipe[];
   loading: boolean;
   error: string | null;
+  showDeleted: boolean;
+  setShowDeleted: (show: boolean) => void;
   addRecipe: (recipeData: Omit<Recipe, 'id'>) => Promise<Recipe | null>;
   updateRecipe: (recipeId: string, recipeData: Omit<Recipe, 'id'>) => Promise<Recipe | null>;
   deleteRecipe: (recipeId: string) => Promise<boolean>;
+  resetRecipe: (recipeId: string) => Promise<boolean>;
+  restoreRecipe: (recipeId: string) => Promise<boolean>;
   refreshRecipes: () => void;
   getRecipe: (recipeId: string) => Recipe | undefined;
+  getOriginalRecipe: (recipeId: string) => Recipe | null;
   calculateNutrition: (recipe: Recipe) => RecipeNutrition;
 }
 
@@ -32,6 +42,7 @@ export function useRecipes(): UseRecipesReturn {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   // Загрузка рецептов
   const loadRecipes = useCallback(() => {
@@ -39,15 +50,22 @@ export function useRecipes(): UseRecipesReturn {
       setLoading(true);
       setError(null);
       
-      const allRecipes = getAllRecipes();
-      setRecipes(allRecipes);
+      if (showDeleted) {
+        // Показывать только удалённые рецепты
+        const deletedRecipes = getDeletedRecipes();
+        setRecipes(deletedRecipes);
+      } else {
+        // Показывать только активные рецепты (как было раньше)
+        const activeRecipes = getAllRecipes();
+        setRecipes(activeRecipes);
+      }
     } catch (err) {
       setError('Ошибка при загрузке рецептов');
       console.error('Ошибка загрузки рецептов:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showDeleted]);
 
   // Обновление списка рецептов
   const refreshRecipes = useCallback(() => {
@@ -60,8 +78,15 @@ export function useRecipes(): UseRecipesReturn {
       setError(null);
       const newRecipe = saveUserRecipe(recipeData);
       
-      const allRecipes = getAllRecipes();
-      setRecipes(allRecipes);
+      if (showDeleted) {
+        // Показывать только удалённые рецепты
+        const deletedRecipes = getDeletedRecipes();
+        setRecipes(deletedRecipes);
+      } else {
+        // Показывать только активные рецепты
+        const activeRecipes = getAllRecipes();
+        setRecipes(activeRecipes);
+      }
       
       return newRecipe;
     } catch (err) {
@@ -70,7 +95,7 @@ export function useRecipes(): UseRecipesReturn {
       console.error('Ошибка добавления рецепта:', err);
       return null;
     }
-  }, []);
+  }, [showDeleted]);
 
   // Обновление рецепта
   const updateRecipe = useCallback(async (
@@ -81,8 +106,16 @@ export function useRecipes(): UseRecipesReturn {
       setError(null);
       const updatedRecipe = updateUserRecipe(recipeId, recipeData);
       if (updatedRecipe) {
-        const allRecipes = getAllRecipes();
-        setRecipes(allRecipes);
+        if (showDeleted) {
+          // Показывать только удалённые рецепты
+          const allRecipesWithDeleted = getAllRecipesWithDeleted();
+          const deletedOnly = allRecipesWithDeleted.filter(r => r.isDeleted);
+          setRecipes(deletedOnly);
+        } else {
+          // Показывать только активные рецепты
+          const activeRecipes = getAllRecipes();
+          setRecipes(activeRecipes);
+        }
         return updatedRecipe;
       } else {
         throw new Error('Не удалось обновить рецепт');
@@ -93,7 +126,7 @@ export function useRecipes(): UseRecipesReturn {
       console.error('Ошибка обновления рецепта:', err);
       return null;
     }
-  }, []);
+  }, [showDeleted]);
 
   // Удаление рецепта
   const deleteRecipe = useCallback(async (recipeId: string): Promise<boolean> => {
@@ -101,8 +134,16 @@ export function useRecipes(): UseRecipesReturn {
       setError(null);
       const success = deleteUserRecipe(recipeId);
       if (success) {
-        const allRecipes = getAllRecipes();
-        setRecipes(allRecipes);
+        if (showDeleted) {
+          // Показывать только удалённые рецепты
+          const allRecipesWithDeleted = getAllRecipesWithDeleted();
+          const deletedOnly = allRecipesWithDeleted.filter(r => r.isDeleted);
+          setRecipes(deletedOnly);
+        } else {
+          // Показывать только активные рецепты
+          const activeRecipes = getAllRecipes();
+          setRecipes(activeRecipes);
+        }
         return true;
       } else {
         throw new Error('Не удалось удалить рецепт');
@@ -113,11 +154,71 @@ export function useRecipes(): UseRecipesReturn {
       console.error('Ошибка удаления рецепта:', err);
       return false;
     }
-  }, []);
+  }, [showDeleted]);
+
+  // Сброс системного рецепта
+  const resetRecipe = useCallback(async (recipeId: string): Promise<boolean> => {
+    try {
+      setError(null);
+      const success = resetSystemRecipe(recipeId);
+      if (success) {
+        if (showDeleted) {
+          // Показывать только удалённые рецепты
+          const allRecipesWithDeleted = getAllRecipesWithDeleted();
+          const deletedOnly = allRecipesWithDeleted.filter(r => r.isDeleted);
+          setRecipes(deletedOnly);
+        } else {
+          // Показывать только активные рецепты
+          const activeRecipes = getAllRecipes();
+          setRecipes(activeRecipes);
+        }
+        return true;
+      } else {
+        throw new Error('Не удалось сбросить рецепт');
+      }
+    } catch (err) {
+      const errorMessage = 'Произошла ошибка при сбросе рецепта';
+      setError(errorMessage);
+      console.error('Ошибка сброса рецепта:', err);
+      return false;
+    }
+  }, [showDeleted]);
+
+  // Восстановление удалённого системного рецепта
+  const restoreRecipe = useCallback(async (recipeId: string): Promise<boolean> => {
+    try {
+      setError(null);
+      const success = restoreSystemRecipe(recipeId);
+      if (success) {
+        if (showDeleted) {
+          // Показывать только удалённые рецепты (убираем восстановленный из списка)
+          const deletedRecipes = getDeletedRecipes();
+          setRecipes(deletedRecipes);
+        } else {
+          // Показывать только активные рецепты
+          const activeRecipes = getAllRecipes();
+          setRecipes(activeRecipes);
+        }
+        return true;
+      } else {
+        throw new Error('Не удалось восстановить рецепт');
+      }
+    } catch (err) {
+      const errorMessage = 'Произошла ошибка при восстановлении рецепта';
+      setError(errorMessage);
+      console.error('Ошибка восстановления рецепта:', err);
+      return false;
+    }
+  }, [showDeleted]);
 
   // Получение рецепта по ID
   const getRecipe = useCallback((recipeId: string): Recipe | undefined => {
     return getRecipeById(recipeId);
+  }, []);
+
+  // Получение оригинального системного рецепта
+  const getOriginalRecipe = useCallback((recipeId: string): Recipe | null => {
+    return getOriginalSystemRecipe(recipeId);
   }, []);
 
   // Расчёт пищевой ценности рецепта
@@ -134,11 +235,16 @@ export function useRecipes(): UseRecipesReturn {
     recipes,
     loading,
     error,
+    showDeleted,
+    setShowDeleted,
     addRecipe,
     updateRecipe,
     deleteRecipe,
+    resetRecipe,
+    restoreRecipe,
     refreshRecipes,
     getRecipe,
+    getOriginalRecipe,
     calculateNutrition
   };
 }

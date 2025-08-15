@@ -104,8 +104,49 @@ export function saveUserRecipe(recipe: Omit<Recipe, 'id'>): Recipe {
   }
 }
 
+export function isUserRecipe(recipeId: string): boolean {
+  // Проверяем, является ли это системным рецептом из RECIPES_DATABASE
+  const isSystemRecipe = RECIPES_DATABASE.some(recipe => recipe.id === recipeId);
+  return !isSystemRecipe;
+}
+
+export function isModifiedSystemRecipe(recipeId: string): boolean {
+  // Проверяем, является ли это системным рецептом, который был изменен пользователем
+  if (isUserRecipe(recipeId)) return false; // Это пользовательский рецепт, не системный
+  
+  const userRecipes = getUserRecipes();
+  return userRecipes.some(r => r.id === recipeId);
+}
+
+export function getOriginalSystemRecipe(recipeId: string): Recipe | null {
+  // Возвращает оригинальную версию системного рецепта
+  const originalRecipe = RECIPES_DATABASE.find(recipe => recipe.id === recipeId);
+  return originalRecipe || null;
+}
+
 export function updateUserRecipe(recipeId: string, recipeData: Omit<Recipe, 'id'>): Recipe | null {
   const userRecipes = getUserRecipes();
+  
+  // Если это системный рецепт, который еще не был изменен пользователем
+  if (!isUserRecipe(recipeId) && !isModifiedSystemRecipe(recipeId)) {
+    // Создаем пользовательскую копию системного рецепта
+    const updatedRecipe: Recipe = {
+      ...recipeData,
+      id: recipeId
+    };
+    
+    const updatedUserRecipes = [...userRecipes, updatedRecipe];
+    
+    try {
+      localStorage.setItem(USER_RECIPES_KEY, JSON.stringify(updatedUserRecipes));
+      return updatedRecipe;
+    } catch (error) {
+      console.error('Ошибка при создании пользовательской копии рецепта:', error);
+      return null;
+    }
+  }
+  
+  // Обновляем существующий пользовательский рецепт
   const recipeIndex = userRecipes.findIndex(r => r.id === recipeId);
   
   if (recipeIndex === -1) return null;
@@ -127,6 +168,23 @@ export function updateUserRecipe(recipeId: string, recipeData: Omit<Recipe, 'id'
 }
 
 export function deleteUserRecipe(recipeId: string): boolean {
+  // Если это системный рецепт, помечаем его как удаленный в deleted_system_recipes
+  if (!isUserRecipe(recipeId)) {
+    const deletedRecipes = getDeletedSystemRecipes();
+    if (!deletedRecipes.includes(recipeId)) {
+      deletedRecipes.push(recipeId);
+      try {
+        localStorage.setItem('deleted_system_recipes', JSON.stringify(deletedRecipes));
+        return true;
+      } catch (error) {
+        console.error('Ошибка при удалении системного рецепта:', error);
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // Если это пользовательский рецепт, удаляем его физически
   const userRecipes = getUserRecipes();
   const filteredRecipes = userRecipes.filter(r => r.id !== recipeId);
   
@@ -134,7 +192,7 @@ export function deleteUserRecipe(recipeId: string): boolean {
     localStorage.setItem(USER_RECIPES_KEY, JSON.stringify(filteredRecipes));
     return true;
   } catch (error) {
-    console.error('Ошибка при удалении рецепта:', error);
+    console.error('Ошибка при удалении пользовательского рецепта:', error);
     return false;
   }
 }
@@ -147,8 +205,31 @@ export function getRecipeById(id: string): Recipe | undefined {
 export function getAllRecipes(): Recipe[] {
   const systemRecipes = getSystemRecipes();
   const userRecipes = getUserRecipes();
+  const deletedSystemRecipes = getDeletedSystemRecipes();
   
-  return [...systemRecipes, ...userRecipes];
+  // Создаем Map для быстрого поиска пользовательских изменений
+  const userRecipesMap = new Map<string, Recipe>();
+  const newUserRecipes: Recipe[] = [];
+  
+  userRecipes.forEach(recipe => {
+    const isSystemRecipe = systemRecipes.some(sr => sr.id === recipe.id);
+    if (isSystemRecipe) {
+      userRecipesMap.set(recipe.id, recipe);
+    } else {
+      // Это новый пользовательский рецепт
+      newUserRecipes.push(recipe);
+    }
+  });
+  
+  // Обрабатываем системные рецепты
+  const processedSystemRecipes = systemRecipes
+    .filter(recipe => !deletedSystemRecipes.includes(recipe.id)) // Исключаем удаленные рецепты
+    .map(systemRecipe => {
+      const userModification = userRecipesMap.get(systemRecipe.id);
+      return userModification || systemRecipe;
+    });
+  
+  return [...processedSystemRecipes, ...newUserRecipes];
 }
 
 export function searchRecipes(query: string): Recipe[] {
@@ -158,6 +239,103 @@ export function searchRecipes(query: string): Recipe[] {
     recipe.name.toLowerCase().includes(lowercaseQuery) ||
     recipe.description?.toLowerCase().includes(lowercaseQuery)
   );
+}
+
+export function resetSystemRecipe(recipeId: string): boolean {
+  // Сбрасываем изменения системного рецепта к оригинальному состоянию
+  if (isUserRecipe(recipeId)) {
+    console.error('Нельзя сбросить пользовательский рецепт');
+    return false;
+  }
+
+  const userRecipes = getUserRecipes();
+  const filteredRecipes = userRecipes.filter(r => r.id !== recipeId);
+  
+  try {
+    localStorage.setItem(USER_RECIPES_KEY, JSON.stringify(filteredRecipes));
+    return true;
+  } catch (error) {
+    console.error('Ошибка при сбросе системного рецепта:', error);
+    return false;
+  }
+}
+
+export function restoreSystemRecipe(recipeId: string): boolean {
+  // Восстанавливаем удаленный системный рецепт
+  if (isUserRecipe(recipeId)) {
+    console.error('Нельзя восстановить пользовательский рецепт');
+    return false;
+  }
+
+  const deletedRecipes = getDeletedSystemRecipes();
+  const filteredDeleted = deletedRecipes.filter(id => id !== recipeId);
+  
+  try {
+    localStorage.setItem('deleted_system_recipes', JSON.stringify(filteredDeleted));
+    return true;
+  } catch (error) {
+    console.error('Ошибка при восстановлении системного рецепта:', error);
+    return false;
+  }
+}
+
+export function getAllRecipesWithDeleted(): Recipe[] {
+  // Возвращает все рецепты, включая удаленные (для админ режима)
+  const systemRecipes = getSystemRecipes();
+  const userRecipes = getUserRecipes();
+  const deletedSystemRecipes = getDeletedSystemRecipes();
+  
+  // Создаем Map для быстрого поиска пользовательских изменений
+  const userRecipesMap = new Map<string, Recipe>();
+  const newUserRecipes: Recipe[] = [];
+  
+  userRecipes.forEach(recipe => {
+    const isSystemRecipe = systemRecipes.some(sr => sr.id === recipe.id);
+    if (isSystemRecipe) {
+      userRecipesMap.set(recipe.id, recipe);
+    } else {
+      // Это новый пользовательский рецепт
+      newUserRecipes.push(recipe);
+    }
+  });
+  
+  // Обрабатываем системные рецепты - заменяем на пользовательские версии если есть, помечаем удалённые
+  const processedSystemRecipes = systemRecipes.map(systemRecipe => {
+    const userModification = userRecipesMap.get(systemRecipe.id);
+    const isDeleted = deletedSystemRecipes.includes(systemRecipe.id);
+    
+    if (userModification) {
+      return { ...userModification, isDeleted };
+    }
+    
+    return { ...systemRecipe, isDeleted };
+  });
+  
+  return [...processedSystemRecipes, ...newUserRecipes];
+}
+
+export function getDeletedSystemRecipes(): string[] {
+  if (typeof window === 'undefined') return [];
+  
+  try {
+    const stored = localStorage.getItem('deleted_system_recipes');
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.error('Ошибка при загрузке удаленных системных рецептов:', error);
+    return [];
+  }
+}
+
+// Получение удалённых системных рецептов как объектов
+export function getDeletedRecipes(): Recipe[] {
+  const deletedIds = getDeletedSystemRecipes();
+  const systemRecipes = getSystemRecipes();
+  return systemRecipes.filter(r => deletedIds.includes(r.id));
+}
+
+// Подсчет количества удаленных системных рецептов
+export function getDeletedRecipesCount(): number {
+  return getDeletedSystemRecipes().length;
 }
 
 // Системные рецепты
