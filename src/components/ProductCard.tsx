@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo, useCallback } from 'react';
 import { Edit, Trash2, RotateCcw } from 'lucide-react';
 import { Product, getCategoryName, isModifiedSystemProduct, getProductMeasurementUnits } from '@/lib/products-data';
 import { Button } from '@/components/ui/button';
@@ -13,27 +13,27 @@ interface ProductCardProps {
   onReset?: (productId: string) => void;
 }
 
-export default function ProductCard({ product, onEdit, onDelete, onReset }: ProductCardProps) {
+function ProductCard({ product, onEdit, onDelete, onReset }: ProductCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const handleCardClick = () => {
+  const handleCardClick = useCallback(() => {
     setIsExpanded(!isExpanded);
-  };
+  }, [isExpanded]);
 
-  const handleEditClick = (e: React.MouseEvent) => {
+  const handleEditClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     onEdit?.(product);
-  };
+  }, [onEdit, product]);
 
-  const handleDeleteClick = (e: React.MouseEvent) => {
+  const handleDeleteClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     onDelete?.(product.id);
-  };
+  }, [onDelete, product.id]);
 
-  const handleResetClick = (e: React.MouseEvent) => {
+  const handleResetClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     onReset?.(product.id);
-  };
+  }, [onReset, product.id]);
 
   const isModified = isModifiedSystemProduct(product.id);
 
@@ -135,3 +135,6 @@ export default function ProductCard({ product, onEdit, onDelete, onReset }: Prod
     </div>
   );
 }
+
+// Мемоизируем компонент для предотвращения ненужных перерендеров
+export default memo(ProductCard);

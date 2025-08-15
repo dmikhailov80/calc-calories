@@ -6,6 +6,8 @@ export { useProductModal } from './useProductModal';
 export { useConfirmModal } from './useConfirmModal';
 export { useInfoTooltip } from './useInfoTooltip';
 export { useProductForm } from './useProductForm';
+export { useProductSearch, clearSearchCache } from './useProductSearch';
+export { useDebounced, useDebouncedSearch, useDebouncedWithForce } from './useDebounced';
 
 export type { UseProductsReturn } from './useProducts';
 export type { UseProductFiltersReturn, ProductFilters } from './useProductFilters';

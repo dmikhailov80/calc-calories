@@ -1,6 +1,7 @@
 'use client';
 
 import { AlertTriangle, CheckCircle } from 'lucide-react';
+import { memo } from 'react';
 
 interface ValidationSummaryProps {
   isValid: boolean;
@@ -13,7 +14,7 @@ interface ValidationSummaryProps {
 /**
  * Компонент для отображения общего состояния валидации формы
  */
-export default function ValidationSummary({ 
+function ValidationSummary({ 
   isValid, 
   isDirty, 
   errors, 
@@ -70,3 +71,5 @@ export default function ValidationSummary({
 
   return null;
 }
+
+export default memo(ValidationSummary);

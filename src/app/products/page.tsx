@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import { BookOpen, Search, Info, Plus } from 'lucide-react';
 import { Product } from '@/lib/products-data';
 import { useProducts, useProductFilters, useProductModal, useConfirmModal, useInfoTooltip } from '@/hooks';
@@ -56,41 +56,19 @@ export default function ProductsPage() {
     infoRef
   } = useInfoTooltip();
 
-  if (status === 'loading' || productsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Загрузка...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return (
-      <div className="flex items-center justify-center min-h-screen p-4">
-        <div className="bg-card p-8 rounded-lg border shadow-sm text-center max-w-md w-full">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Доступ запрещен</h1>
-          <p className="text-muted-foreground">Войдите в систему для просмотра продуктов</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Обработчики для управления продуктами
-  const handleEditProduct = (product: Product) => {
+  // Мемоизированные обработчики для управления продуктами
+  const handleEditProduct = useCallback((product: Product) => {
     openEditModal(product);
-  };
+  }, [openEditModal]);
 
-  const handleDeleteProduct = (productId: string) => {
+  const handleDeleteProduct = useCallback((productId: string) => {
     const product = products.find(p => p.id === productId);
     if (product) {
       openDeleteModal(product);
     }
-  };
+  }, [products, openDeleteModal]);
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = useCallback(async () => {
     if (deleteModal.product) {
       const success = await deleteProduct(deleteModal.product.id);
       if (success) {
@@ -99,18 +77,18 @@ export default function ProductsPage() {
         alert('Произошла ошибка при удалении продукта');
       }
     }
-  };
+  }, [deleteModal.product, deleteProduct, closeDeleteModal]);
 
-  const handleResetProduct = (productId: string) => {
+  const handleResetProduct = useCallback((productId: string) => {
     const product = products.find(p => p.id === productId);
     const originalProduct = getOriginalProduct(productId);
     
     if (product && originalProduct) {
       openResetModal(product, originalProduct);
     }
-  };
+  }, [products, getOriginalProduct, openResetModal]);
 
-  const handleConfirmReset = async () => {
+  const handleConfirmReset = useCallback(async () => {
     if (resetModal.product) {
       const success = await resetProduct(resetModal.product.id);
       if (success) {
@@ -119,9 +97,9 @@ export default function ProductsPage() {
         alert('Произошла ошибка при сбросе продукта');
       }
     }
-  };
+  }, [resetModal.product, resetProduct, closeResetModal]);
 
-  const handleModalSubmit = async (productData: Omit<Product, 'id'>, productId?: string) => {
+  const handleModalSubmit = useCallback(async (productData: Omit<Product, 'id'>, productId?: string) => {
     let success = false;
     
     if (isEditMode && productId) {
@@ -137,7 +115,31 @@ export default function ProductsPage() {
     if (success) {
       closeModal();
     }
-  };
+  }, [isEditMode, updateProduct, addProduct, closeModal]);
+
+  // Проверяем состояние загрузки после всех хуков
+  if (status === 'loading' || productsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Загрузка...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Проверяем авторизацию после всех хуков
+  if (!session) {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <div className="bg-card p-8 rounded-lg border shadow-sm text-center max-w-md w-full">
+          <h1 className="text-2xl font-bold text-foreground mb-4">Доступ запрещен</h1>
+          <p className="text-muted-foreground">Войдите в систему для просмотра продуктов</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-4 lg:p-6 pb-20 lg:pb-6">

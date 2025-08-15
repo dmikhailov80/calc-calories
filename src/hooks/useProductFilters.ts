@@ -26,34 +26,44 @@ export function useProductFilters(products: Product[]): UseProductFiltersReturn 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  // Получаем все категории
+  // Получаем все категории - мемоизируем статический результат
   const categories = useMemo(() => getAllCategories(), []);
 
-  // Фильтрация продуктов
+  // Мемоизируем нормализованный поисковый запрос
+  const normalizedSearchQuery = useMemo(() => {
+    return searchQuery.toLowerCase().trim();
+  }, [searchQuery]);
+
+  // Мемоизируем ключ категории
+  const categoryKey = useMemo(() => {
+    return selectedCategory !== 'all' ? getCategoryKey(selectedCategory) : null;
+  }, [selectedCategory]);
+
+  // Фильтрация продуктов с улучшенной производительностью
   const filteredProducts = useMemo(() => {
-    let result = products;
-
-    // Фильтрация по поисковому запросу
-    if (searchQuery.trim()) {
-      const lowercaseQuery = searchQuery.toLowerCase().trim();
-      result = result.filter(product => 
-        product.name.toLowerCase().includes(lowercaseQuery)
-      );
+    if (!normalizedSearchQuery && !categoryKey) {
+      return products; // Если нет фильтров, возвращаем оригинальный массив
     }
 
-    // Фильтрация по категории
-    if (selectedCategory !== 'all') {
-      const categoryKey = getCategoryKey(selectedCategory);
-      result = result.filter(product => product.category === categoryKey);
-    }
+    return products.filter(product => {
+      // Фильтрация по поисковому запросу
+      if (normalizedSearchQuery && !product.name.toLowerCase().includes(normalizedSearchQuery)) {
+        return false;
+      }
 
-    return result;
-  }, [products, searchQuery, selectedCategory]);
+      // Фильтрация по категории
+      if (categoryKey && product.category !== categoryKey) {
+        return false;
+      }
 
-  // Проверка наличия активных фильтров
+      return true;
+    });
+  }, [products, normalizedSearchQuery, categoryKey]);
+
+  // Проверка наличия активных фильтров - используем уже вычисленные значения
   const hasActiveFilters = useMemo(() => {
-    return searchQuery.trim() !== '' || selectedCategory !== 'all';
-  }, [searchQuery, selectedCategory]);
+    return !!normalizedSearchQuery || !!categoryKey;
+  }, [normalizedSearchQuery, categoryKey]);
 
   // Очистка всех фильтров
   const clearFilters = useCallback(() => {

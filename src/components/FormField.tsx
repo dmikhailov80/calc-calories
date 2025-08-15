@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 
 interface FormFieldProps {
   label: string;
@@ -13,7 +13,7 @@ interface FormFieldProps {
 /**
  * Универсальный компонент для полей формы с отображением ошибок
  */
-export default function FormField({ 
+function FormField({ 
   label, 
   error, 
   children, 
@@ -67,7 +67,7 @@ interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 /**
  * Компонент input с встроенной поддержкой ошибок
  */
-export function FormInput({ 
+function FormInputComponent({ 
   label, 
   error, 
   helpText, 
@@ -103,7 +103,7 @@ interface FormSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> 
 /**
  * Компонент select с встроенной поддержкой ошибок
  */
-export function FormSelect({ 
+function FormSelectComponent({ 
   label, 
   error, 
   helpText, 
@@ -134,3 +134,8 @@ export function FormSelect({
     </FormField>
   );
 }
+
+// Мемоизированные экспорты компонентов
+export default memo(FormField);
+export const FormInput = memo(FormInputComponent);
+export const FormSelect = memo(FormSelectComponent);

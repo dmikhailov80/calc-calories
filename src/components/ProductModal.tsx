@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useCallback, useMemo, memo } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Product, PRODUCT_CATEGORIES } from '@/lib/products-data';
@@ -17,7 +17,7 @@ interface ProductModalProps {
   mode?: 'add' | 'edit';
 }
 
-export default function ProductModal({ isOpen, onClose, onSubmit, product, mode = 'add' }: ProductModalProps) {
+function ProductModal({ isOpen, onClose, onSubmit, product, mode = 'add' }: ProductModalProps) {
   const isEditMode = mode === 'edit' && product;
 
   // Используем новый хук для управления формой
@@ -34,6 +34,14 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, mode 
     removeMeasurementUnit,
     updateMeasurementUnit
   } = useProductForm(isEditMode ? product : undefined);
+
+  // Мемоизируем опции категорий
+  const categoryOptions = useMemo(() => 
+    Object.values(PRODUCT_CATEGORIES).map(cat => ({
+      value: cat.key,
+      label: cat.name
+    }))
+  , []);
 
   // Сброс формы при открытии/закрытии модалки
   useEffect(() => {
@@ -62,12 +70,12 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, mode 
     }
   }, [isOpen, onClose]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     updateField(name as keyof typeof formData, value);
-  };
+  }, [updateField]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     
     const validatedData = getValidatedData();
@@ -85,14 +93,14 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, mode 
       measurementUnits: formData.measurementUnits
     };
 
-    onSubmit(productData, isEditMode ? product.id : undefined);
+    onSubmit(productData, isEditMode ? product?.id : undefined);
     handleClose();
-  };
+  }, [getValidatedData, validateForm, formData.measurementUnits, onSubmit, isEditMode, product?.id]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     resetForm();
     onClose();
-  };
+  }, [resetForm, onClose]);
 
   // Функции для управления единицами измерения теперь приходят из хука
 
@@ -144,10 +152,7 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, mode 
             value={formData.category}
             onChange={handleInputChange}
             error={errors.category}
-            options={Object.values(PRODUCT_CATEGORIES).map(cat => ({
-              value: cat.key,
-              label: cat.name
-            }))}
+            options={categoryOptions}
             mode={mode}
             required
           />
@@ -401,3 +406,5 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, mode 
     </div>
   );
 }
+
+export default memo(ProductModal);
