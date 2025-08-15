@@ -65,22 +65,20 @@ function RecipeCard({ recipe, nutrition, onClick, onEdit, onDelete, onReset, onR
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center space-x-2 flex-1">
           <ChefHat className="h-5 w-5 text-primary flex-shrink-0" />
-          <div>
+          <div className="flex items-center space-x-2">
             <h3 className={`text-lg font-semibold line-clamp-2 ${isDeleted ? 'text-red-600' : 'text-foreground'}`}>
               {recipe.name}
             </h3>
-            <div className="flex items-center space-x-2 mt-1">
-              {isDeleted && (
-                <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
-                  Удален
-                </span>
-              )}
-              {!isDeleted && isModified && (
-                <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">
-                  Изменен
-                </span>
-              )}
-            </div>
+            {isDeleted && (
+              <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
+                Удален
+              </span>
+            )}
+            {!isDeleted && isModified && (
+              <span className="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">
+                Изменен
+              </span>
+            )}
           </div>
         </div>
       </div>

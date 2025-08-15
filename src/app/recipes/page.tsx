@@ -163,7 +163,7 @@ export default function RecipesPage() {
   return (
     <div className="container mx-auto p-4 lg:p-6">
       {/* Заголовок */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
           <ChefHat className="h-8 w-8 text-primary" />
           <h1 className="text-3xl font-bold text-foreground">Рецепты</h1>
@@ -192,17 +192,15 @@ export default function RecipesPage() {
             </label>
           </div>
 
-          {/* Кнопка добавления рецепта - показываем только если не показываем удаленные */}
-          {!showDeleted && (
-            <button 
-              className="flex items-center space-x-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-              onClick={openAddModal}
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Создать рецепт</span>
-              <Plus className="h-4 w-4 sm:hidden" />
-            </button>
-          )}
+          {/* Кнопка добавления рецепта */}
+          <button
+            onClick={openAddModal}
+            className="flex items-center justify-center sm:justify-start sm:space-x-2 px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            aria-label="Создать рецепт"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline ml-0 sm:ml-0">Создать рецепт</span>
+          </button>
         </div>
       </div>
 
