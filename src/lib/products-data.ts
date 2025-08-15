@@ -9,6 +9,7 @@ export interface Product {
   fat: number;      // g per 100g
   carbs: number;    // g per 100g
   measurementUnits: MeasurementUnit[]; // дополнительные единицы измерения (граммы добавляются автоматически)
+  isDeleted?: boolean; // флаг для удалённых продуктов (используется только в админ-режиме)
 }
 
 // Импортируем данные из отдельных файлов
@@ -165,7 +166,7 @@ export function deleteUserProduct(productId: string): boolean {
   }
 }
 
-function getDeletedSystemProducts(): string[] {
+export function getDeletedSystemProducts(): string[] {
   if (typeof window === 'undefined') return [];
   
   try {
@@ -309,4 +310,52 @@ export function clearMigrationReport(): void {
   } catch (error) {
     console.error('Ошибка при очистке отчета о миграции:', error);
   }
+}
+
+// Получение удалённых системных продуктов
+export function getDeletedProducts(): Product[] {
+  const deletedIds = getDeletedSystemProducts();
+  return PRODUCTS_DATABASE.filter(p => deletedIds.includes(p.id));
+}
+
+// Функция для восстановления удалённого системного продукта
+export function restoreSystemProduct(productId: string): boolean {
+  const deletedProducts = getDeletedSystemProducts();
+  const filteredDeleted = deletedProducts.filter(id => id !== productId);
+  
+  try {
+    localStorage.setItem('deleted_system_products', JSON.stringify(filteredDeleted));
+    return true;
+  } catch (error) {
+    console.error('Ошибка при восстановлении системного продукта:', error);
+    return false;
+  }
+}
+
+// Получение всех продуктов включая удалённые (для администрирования)
+export function getAllProductsWithDeleted(): Product[] {
+  const userProducts = getUserProducts();
+  const deletedSystemProducts = getDeletedSystemProducts();
+  
+  // Создаем Map для быстрого поиска пользовательских продуктов по ID
+  const userProductsMap = new Map(userProducts.map(p => [p.id, p]));
+  
+  // Обрабатываем системные продукты - заменяем на пользовательские версии если есть, помечаем удалённые
+  const processedSystemProducts = PRODUCTS_DATABASE.map(p => {
+    const userVersion = userProductsMap.get(p.id);
+    const isDeleted = deletedSystemProducts.includes(p.id);
+    
+    if (userVersion) {
+      return { ...userVersion, isDeleted };
+    }
+    
+    return { ...p, isDeleted };
+  });
+  
+  // Добавляем только новые пользовательские продукты (те что не перезаписывают системные)
+  const newUserProducts = userProducts
+    .filter(p => isUserProduct(p.id))
+    .map(p => ({ ...p, isDeleted: false }));
+  
+  return [...processedSystemProducts, ...newUserProducts];
 }

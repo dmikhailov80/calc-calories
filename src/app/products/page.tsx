@@ -2,9 +2,10 @@
 
 import { useSession } from 'next-auth/react';
 import { useRef, useState, useEffect, useMemo, useCallback } from 'react';
-import { BookOpen, Search, Info, Plus } from 'lucide-react';
-import { Product } from '@/lib/products-data';
+import { BookOpen, Search, Info, Plus, EyeOff, Trash2 } from 'lucide-react';
+import { Product, getDeletedSystemProducts } from '@/lib/products-data';
 import { useProducts, useProductFilters, useProductModal, useConfirmModal, useInfoTooltip } from '@/hooks';
+import { Switch } from '@/components/ui/switch';
 import ProductCard from '@/components/ProductCard';
 import ProductModal from '@/components/ProductModal';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
@@ -18,10 +19,13 @@ export default function ProductsPage() {
     products, 
     loading: productsLoading, 
     error: productsError,
+    showDeleted,
+    setShowDeleted,
     addProduct, 
     updateProduct, 
     deleteProduct, 
     resetProduct, 
+    restoreProduct,
     getOriginalProduct 
   } = useProducts();
   
@@ -99,6 +103,18 @@ export default function ProductsPage() {
     }
   }, [resetModal.product, resetProduct, closeResetModal]);
 
+  const handleRestoreProduct = useCallback(async (productId: string) => {
+    const success = await restoreProduct(productId);
+    if (!success) {
+      alert('Произошла ошибка при восстановлении продукта');
+    }
+  }, [restoreProduct]);
+
+  // Подсчёт удалённых продуктов (всегда из всех продуктов, независимо от режима)
+  const deletedCount = useMemo(() => {
+    return getDeletedSystemProducts().length;
+  }, [products]); // Обновляем когда products изменяется (после операций)
+
   const handleModalSubmit = useCallback(async (productData: Omit<Product, 'id'>, productId?: string) => {
     let success = false;
     
@@ -150,7 +166,28 @@ export default function ProductsPage() {
         </div>
         
         {/* Кнопки управления */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
+          {/* Переключатель показа удалённых продуктов */}
+          <div className="flex items-center space-x-2">
+            <label htmlFor="show-deleted" className="flex items-center space-x-2 cursor-pointer">
+              <Switch
+                id="show-deleted"
+                checked={showDeleted}
+                onCheckedChange={setShowDeleted}
+                className="data-[state=checked]:bg-red-500"
+              />
+              <span className="text-sm font-medium text-muted-foreground flex items-center space-x-1">
+                <Trash2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Удалённые</span>
+                {deletedCount > 0 && (
+                  <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">
+                    {deletedCount}
+                  </span>
+                )}
+              </span>
+            </label>
+          </div>
+
           {/* Кнопка добавления продукта */}
           <button
             onClick={openAddModal}
@@ -235,7 +272,9 @@ export default function ProductsPage() {
       <div className="grid gap-4">
         {filteredProducts.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-muted-foreground">Продукты не найдены</p>
+            <p className="text-muted-foreground">
+              {showDeleted ? 'Удалённые продукты не найдены' : 'Продукты не найдены'}
+            </p>
           </div>
         ) : (
           filteredProducts.map((product) => (
@@ -245,6 +284,7 @@ export default function ProductsPage() {
               onEdit={handleEditProduct}
               onDelete={handleDeleteProduct}
               onReset={handleResetProduct}
+              onRestore={handleRestoreProduct}
             />
           ))
         )}

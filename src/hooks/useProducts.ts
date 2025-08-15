@@ -4,10 +4,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { 
   Product, 
   getAllProducts, 
+  getAllProductsWithDeleted,
   saveUserProduct, 
   updateUserProduct, 
   deleteUserProduct, 
   resetSystemProduct,
+  restoreSystemProduct,
   getOriginalSystemProduct 
 } from '@/lib/products-data';
 
@@ -15,10 +17,13 @@ export interface UseProductsReturn {
   products: Product[];
   loading: boolean;
   error: string | null;
+  showDeleted: boolean;
+  setShowDeleted: (show: boolean) => void;
   addProduct: (productData: Omit<Product, 'id'>) => Promise<Product | null>;
   updateProduct: (productId: string, productData: Omit<Product, 'id'>) => Promise<Product | null>;
   deleteProduct: (productId: string) => Promise<boolean>;
   resetProduct: (productId: string) => Promise<boolean>;
+  restoreProduct: (productId: string) => Promise<boolean>;
   refreshProducts: () => void;
   getOriginalProduct: (productId: string) => Product | null;
 }
@@ -31,21 +36,31 @@ export function useProducts(): UseProductsReturn {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   // Загрузка продуктов
   const loadProducts = useCallback(() => {
     try {
       setLoading(true);
       setError(null);
-      const allProducts = getAllProducts();
-      setProducts(allProducts);
+      
+      if (showDeleted) {
+        // Показывать только удалённые продукты
+        const allProductsWithDeleted = getAllProductsWithDeleted();
+        const deletedOnly = allProductsWithDeleted.filter(p => p.isDeleted);
+        setProducts(deletedOnly);
+      } else {
+        // Показывать только активные продукты (как было раньше)
+        const activeProducts = getAllProducts();
+        setProducts(activeProducts);
+      }
     } catch (err) {
       setError('Ошибка при загрузке продуктов');
       console.error('Ошибка загрузки продуктов:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showDeleted]);
 
   // Обновление списка продуктов
   const refreshProducts = useCallback(() => {
@@ -57,7 +72,18 @@ export function useProducts(): UseProductsReturn {
     try {
       setError(null);
       const newProduct = saveUserProduct(productData);
-      setProducts(getAllProducts());
+      
+      if (showDeleted) {
+        // Показывать только удалённые продукты
+        const allProductsWithDeleted = getAllProductsWithDeleted();
+        const deletedOnly = allProductsWithDeleted.filter(p => p.isDeleted);
+        setProducts(deletedOnly);
+      } else {
+        // Показывать только активные продукты
+        const activeProducts = getAllProducts();
+        setProducts(activeProducts);
+      }
+      
       return newProduct;
     } catch (err) {
       const errorMessage = 'Произошла ошибка при добавлении продукта';
@@ -65,7 +91,7 @@ export function useProducts(): UseProductsReturn {
       console.error('Ошибка добавления продукта:', err);
       return null;
     }
-  }, []);
+  }, [showDeleted]);
 
   // Обновление продукта
   const updateProduct = useCallback(async (
@@ -76,7 +102,16 @@ export function useProducts(): UseProductsReturn {
       setError(null);
       const updatedProduct = updateUserProduct(productId, productData);
       if (updatedProduct) {
-        setProducts(getAllProducts());
+        if (showDeleted) {
+          // Показывать только удалённые продукты
+          const allProductsWithDeleted = getAllProductsWithDeleted();
+          const deletedOnly = allProductsWithDeleted.filter(p => p.isDeleted);
+          setProducts(deletedOnly);
+        } else {
+          // Показывать только активные продукты
+          const activeProducts = getAllProducts();
+          setProducts(activeProducts);
+        }
         return updatedProduct;
       } else {
         throw new Error('Не удалось обновить продукт');
@@ -87,7 +122,7 @@ export function useProducts(): UseProductsReturn {
       console.error('Ошибка обновления продукта:', err);
       return null;
     }
-  }, []);
+  }, [showDeleted]);
 
   // Удаление продукта
   const deleteProduct = useCallback(async (productId: string): Promise<boolean> => {
@@ -95,7 +130,16 @@ export function useProducts(): UseProductsReturn {
       setError(null);
       const success = deleteUserProduct(productId);
       if (success) {
-        setProducts(getAllProducts());
+        if (showDeleted) {
+          // Показывать только удалённые продукты
+          const allProductsWithDeleted = getAllProductsWithDeleted();
+          const deletedOnly = allProductsWithDeleted.filter(p => p.isDeleted);
+          setProducts(deletedOnly);
+        } else {
+          // Показывать только активные продукты
+          const activeProducts = getAllProducts();
+          setProducts(activeProducts);
+        }
         return true;
       } else {
         throw new Error('Не удалось удалить продукт');
@@ -106,7 +150,7 @@ export function useProducts(): UseProductsReturn {
       console.error('Ошибка удаления продукта:', err);
       return false;
     }
-  }, []);
+  }, [showDeleted]);
 
   // Сброс системного продукта
   const resetProduct = useCallback(async (productId: string): Promise<boolean> => {
@@ -114,7 +158,16 @@ export function useProducts(): UseProductsReturn {
       setError(null);
       const success = resetSystemProduct(productId);
       if (success) {
-        setProducts(getAllProducts());
+        if (showDeleted) {
+          // Показывать только удалённые продукты
+          const allProductsWithDeleted = getAllProductsWithDeleted();
+          const deletedOnly = allProductsWithDeleted.filter(p => p.isDeleted);
+          setProducts(deletedOnly);
+        } else {
+          // Показывать только активные продукты
+          const activeProducts = getAllProducts();
+          setProducts(activeProducts);
+        }
         return true;
       } else {
         throw new Error('Не удалось сбросить продукт');
@@ -125,7 +178,35 @@ export function useProducts(): UseProductsReturn {
       console.error('Ошибка сброса продукта:', err);
       return false;
     }
-  }, []);
+  }, [showDeleted]);
+
+  // Восстановление удалённого системного продукта
+  const restoreProduct = useCallback(async (productId: string): Promise<boolean> => {
+    try {
+      setError(null);
+      const success = restoreSystemProduct(productId);
+      if (success) {
+        if (showDeleted) {
+          // Показывать только удалённые продукты (убираем восстановленный из списка)
+          const allProductsWithDeleted = getAllProductsWithDeleted();
+          const deletedOnly = allProductsWithDeleted.filter(p => p.isDeleted);
+          setProducts(deletedOnly);
+        } else {
+          // Показывать только активные продукты
+          const activeProducts = getAllProducts();
+          setProducts(activeProducts);
+        }
+        return true;
+      } else {
+        throw new Error('Не удалось восстановить продукт');
+      }
+    } catch (err) {
+      const errorMessage = 'Произошла ошибка при восстановлении продукта';
+      setError(errorMessage);
+      console.error('Ошибка восстановления продукта:', err);
+      return false;
+    }
+  }, [showDeleted]);
 
   // Получение оригинального системного продукта
   const getOriginalProduct = useCallback((productId: string): Product | null => {
@@ -141,10 +222,13 @@ export function useProducts(): UseProductsReturn {
     products,
     loading,
     error,
+    showDeleted,
+    setShowDeleted,
     addProduct,
     updateProduct,
     deleteProduct,
     resetProduct,
+    restoreProduct,
     refreshProducts,
     getOriginalProduct
   };
