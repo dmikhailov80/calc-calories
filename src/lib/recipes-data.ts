@@ -330,7 +330,9 @@ export function getDeletedSystemRecipes(): string[] {
 export function getDeletedRecipes(): Recipe[] {
   const deletedIds = getDeletedSystemRecipes();
   const systemRecipes = getSystemRecipes();
-  return systemRecipes.filter(r => deletedIds.includes(r.id));
+  return systemRecipes
+    .filter(r => deletedIds.includes(r.id))
+    .map(r => ({ ...r, isDeleted: true }));
 }
 
 // Подсчет количества удаленных системных рецептов
