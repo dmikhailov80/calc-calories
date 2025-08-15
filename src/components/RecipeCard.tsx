@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, memo, useCallback } from 'react';
+import { memo, useCallback } from 'react';
 import { Edit, Trash2, RotateCcw, Undo2, ChefHat, Utensils } from 'lucide-react';
 import { Recipe, RecipeNutrition, isUserRecipe, isModifiedSystemRecipe } from '@/lib/recipes-data';
 import { getProductById } from '@/lib/products-data';
@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 interface RecipeCardProps {
   recipe: Recipe;
   nutrition: RecipeNutrition;
+  isExpanded?: boolean;
+  onCardClick?: (recipeId: string) => void;
   onClick?: () => void;
   onEdit?: (recipe: Recipe) => void;
   onDelete?: (recipeId: string) => void;
@@ -17,12 +19,10 @@ interface RecipeCardProps {
   className?: string;
 }
 
-function RecipeCard({ recipe, nutrition, onClick, onEdit, onDelete, onReset, onRestore, className = '' }: RecipeCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
+function RecipeCard({ recipe, nutrition, isExpanded = false, onCardClick, onClick, onEdit, onDelete, onReset, onRestore, className = '' }: RecipeCardProps) {
   const handleCardClick = useCallback(() => {
-    setIsExpanded(!isExpanded);
-  }, [isExpanded]);
+    onCardClick?.(recipe.id);
+  }, [onCardClick, recipe.id]);
 
   const handleViewClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();

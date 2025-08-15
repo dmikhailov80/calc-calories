@@ -13,6 +13,7 @@ import ResetConfirmModal from '@/components/ResetConfirmModal';
 
 export default function ProductsPage() {
   const { data: session, status } = useSession();
+  const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
   
   // Custom hooks для управления состоянием
   const { 
@@ -59,6 +60,11 @@ export default function ProductsPage() {
     toggleInfo,
     infoRef
   } = useInfoTooltip();
+
+  // Обработчик клика по карточке продукта
+  const handleCardClick = useCallback((productId: string) => {
+    setExpandedProductId(expandedProductId === productId ? null : productId);
+  }, [expandedProductId]);
 
   // Мемоизированные обработчики для управления продуктами
   const handleEditProduct = useCallback((product: Product) => {
@@ -281,6 +287,8 @@ export default function ProductsPage() {
             <ProductCard 
               key={product.id} 
               product={product} 
+              isExpanded={expandedProductId === product.id}
+              onCardClick={handleCardClick}
               onEdit={handleEditProduct}
               onDelete={handleDeleteProduct}
               onReset={handleResetProduct}

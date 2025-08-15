@@ -43,6 +43,7 @@ export default function RecipesPage() {
   } = useConfirmModal();
   
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = usePersistedState(STORAGE_KEYS.RECIPES_SEARCH, '');
   
   // Подсчет удаленных рецептов
@@ -53,6 +54,11 @@ export default function RecipesPage() {
     recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     recipe.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Обработчик клика по карточке рецепта
+  const handleCardClick = useCallback((recipeId: string) => {
+    setExpandedRecipeId(expandedRecipeId === recipeId ? null : recipeId);
+  }, [expandedRecipeId]);
 
   // Мемоизированные обработчики для управления рецептами
   const handleEditRecipe = useCallback((recipe: Recipe) => {
@@ -226,6 +232,8 @@ export default function RecipesPage() {
               key={recipe.id}
               recipe={recipe}
               nutrition={calculateNutrition(recipe)}
+              isExpanded={expandedRecipeId === recipe.id}
+              onCardClick={handleCardClick}
               onClick={() => setSelectedRecipe(recipe)}
               onEdit={handleEditRecipe}
               onDelete={handleDeleteRecipe}

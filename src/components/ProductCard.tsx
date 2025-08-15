@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, memo, useCallback } from 'react';
+import { memo, useCallback } from 'react';
 import { Edit, Trash2, RotateCcw, Undo2 } from 'lucide-react';
 import { Product, getCategoryName, isModifiedSystemProduct, getProductMeasurementUnits } from '@/lib/products-data';
 import { Button } from '@/components/ui/button';
@@ -8,18 +8,18 @@ import { formatUnitDisplay } from '@/lib/units';
 
 interface ProductCardProps {
   product: Product;
+  isExpanded?: boolean;
+  onCardClick?: (productId: string) => void;
   onEdit?: (product: Product) => void;
   onDelete?: (productId: string) => void;
   onReset?: (productId: string) => void;
   onRestore?: (productId: string) => void;
 }
 
-function ProductCard({ product, onEdit, onDelete, onReset, onRestore }: ProductCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
+function ProductCard({ product, isExpanded = false, onCardClick, onEdit, onDelete, onReset, onRestore }: ProductCardProps) {
   const handleCardClick = useCallback(() => {
-    setIsExpanded(!isExpanded);
-  }, [isExpanded]);
+    onCardClick?.(product.id);
+  }, [onCardClick, product.id]);
 
   const handleEditClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
