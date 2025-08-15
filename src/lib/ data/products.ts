@@ -99,7 +99,22 @@ export const PRODUCTS_DATABASE: Product[] = [
     MEASUREMENT_UNITS.TABLESPOON   // 15г
   ] },
   { id: '550e8400-e29b-41d4-a716-446655440061', name: 'Масло оливковое', category: PRODUCT_CATEGORIES.FATS_OILS.key, calories: 898, protein: 0, fat: 99.8, carbs: 0 },
-  { id: '550e8400-e29b-41d4-a716-446655440062', name: 'Масло сливочное', category: PRODUCT_CATEGORIES.FATS_OILS.key, calories: 717, protein: 0.5, fat: 78.0, carbs: 0.8, measurementUnits: [] },
+  { id: '550e8400-e29b-41d4-a716-446655440062', name: 'Масло сливочное', category: PRODUCT_CATEGORIES.FATS_OILS.key, calories: 717, protein: 0.5, fat: 78.0, carbs: 0.8, measurementUnits: [
+    MEASUREMENT_UNITS.TEASPOON,    // 5г
+    MEASUREMENT_UNITS.TABLESPOON   // 15г
+  ] },
+
+  // Дополнительные продукты для рецептов
+  { id: '550e8400-e29b-41d4-a716-446655440063', name: 'Кабачки', category: PRODUCT_CATEGORIES.VEGETABLES.key, calories: 24, protein: 0.6, fat: 0.3, carbs: 4.6 },
+  { id: '550e8400-e29b-41d4-a716-446655440064', name: 'Сливки 33%', category: PRODUCT_CATEGORIES.DAIRY.key, calories: 337, protein: 2.5, fat: 35.0, carbs: 3.1, measurementUnits: [
+    MEASUREMENT_UNITS.TABLESPOON   // 15г
+  ] },
+  { id: '550e8400-e29b-41d4-a716-446655440065', name: 'Печень трески', category: PRODUCT_CATEGORIES.MEAT_FISH.key, calories: 613, protein: 4.2, fat: 65.7, carbs: 1.2 },
+  { id: '550e8400-e29b-41d4-a716-446655440066', name: 'Хлебцы цельнозерновые', category: PRODUCT_CATEGORIES.CEREALS.key, calories: 310, protein: 10.1, fat: 2.3, carbs: 57.1, measurementUnits: [
+    createCustomUnit(UnitType.PIECES, 8, '1 шт', undefined)
+  ] },
+  { id: '550e8400-e29b-41d4-a716-446655440067', name: 'Огурцы свежие', category: PRODUCT_CATEGORIES.VEGETABLES.key, calories: 15, protein: 0.8, fat: 0.1, carbs: 2.8 },
+  { id: '550e8400-e29b-41d4-a716-446655440068', name: 'Лук зеленый', category: PRODUCT_CATEGORIES.VEGETABLES.key, calories: 19, protein: 1.3, fat: 0.1, carbs: 4.6 },
 ].map(product => ({
   ...product,
   // Если у продукта нет единиц измерения, добавляем пустой массив (граммы добавляются автоматически при отображении)

@@ -8,6 +8,7 @@ export { useInfoTooltip } from './useInfoTooltip';
 export { useProductForm } from './useProductForm';
 export { useProductSearch, clearSearchCache } from './useProductSearch';
 export { useDebounced, useDebouncedSearch, useDebouncedWithForce } from './useDebounced';
+export { useRecipes } from './useRecipes';
 
 export type { UseProductsReturn } from './useProducts';
 export type { UseProductFiltersReturn, ProductFilters } from './useProductFilters';
@@ -15,3 +16,4 @@ export type { UseProductModalReturn, ProductModalState } from './useProductModal
 export type { UseConfirmModalReturn, ConfirmModalState } from './useConfirmModal';
 export type { UseInfoTooltipReturn } from './useInfoTooltip';
 export type { UseProductFormReturn, ProductFormState, FormErrors } from './useProductForm';
+export type { UseRecipesReturn } from './useRecipes';

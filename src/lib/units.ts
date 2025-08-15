@@ -48,7 +48,7 @@ export const MEASUREMENT_UNITS = {
     type: UnitType.PIECES,
     size: PieceSize.MEDIUM,
     weightInGrams: 50,
-    displayName: '1шт (нормальный)'
+    displayName: '1шт (средний)'
   } as MeasurementUnit,
 
   PIECE_LARGE: {
