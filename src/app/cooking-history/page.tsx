@@ -1,7 +1,9 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { Clock } from 'lucide-react';
+import { Clock, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function CookingHistoryPage() {
   const { data: session, status } = useSession();
@@ -32,10 +34,20 @@ export default function CookingHistoryPage() {
     <div className="container mx-auto p-4 lg:p-6">
       <div className="flex items-center space-x-3 mb-6">
         <Clock className="h-8 w-8 text-primary" />
-        <h1 className="text-3xl font-bold text-foreground">История готовки</h1>
+        <h1 className="text-3xl font-bold text-foreground">Готовка</h1>
+      </div>
+      
+      <div className="mb-6">
+        <Link href="/new-cooking">
+          <Button size="lg" className="w-full sm:w-auto">
+            <Plus className="h-5 w-5 mr-2" />
+            Начать новую готовку
+          </Button>
+        </Link>
       </div>
       
       <div className="bg-card p-6 rounded-lg border shadow-sm">
+        <h2 className="text-xl font-semibold mb-4">История готовки</h2>
         <p className="text-muted-foreground">
           Здесь будет отображаться история всех ваших приготовленных блюд с подсчетом калорий.
         </p>

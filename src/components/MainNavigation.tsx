@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChefHat, BookOpen, Clock, Plus, Home } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
+import { ChefHat, BookOpen, Clock, Home } from 'lucide-react';
+
 
 const navigationItems = [
   {
@@ -22,7 +22,7 @@ const navigationItems = [
     icon: ChefHat,
   },
   {
-    name: 'История готовки',
+    name: 'Готовка',
     href: '/cooking-history',
     icon: Clock,
   },
@@ -52,16 +52,7 @@ export default function MainNavigation() {
           </Link>
         );
       })}
-      
-      <Separator className="my-4" />
-      
-      <Link
-        href="/new-cooking"
-        className="flex items-center space-x-3 px-3 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-      >
-        <Plus className="h-5 w-5" />
-        <span className="font-semibold">Новая готовка</span>
-      </Link>
+
     </div>
   );
 
@@ -97,13 +88,6 @@ export default function MainNavigation() {
               </Link>
             );
           })}
-          <Link
-            href="/new-cooking"
-            className="flex flex-col items-center space-y-1 px-2 sm:px-3 py-1 rounded-lg bg-primary text-primary-foreground"
-          >
-            <Plus className="h-5 w-5 min-[420px]:h-4 min-[420px]:w-4 sm:h-5 sm:w-5" />
-            <span className="hidden min-[420px]:block text-xs font-semibold">Готовка</span>
-          </Link>
         </div>
       </div>
     </>
