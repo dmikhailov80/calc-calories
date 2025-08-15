@@ -12,6 +12,8 @@ import {
   restoreSystemProduct,
   getOriginalSystemProduct 
 } from '@/lib/products-data';
+import { usePersistedState } from './usePersistedState';
+import { STORAGE_KEYS } from '@/lib/storage';
 
 export interface UseProductsReturn {
   products: Product[];
@@ -36,7 +38,7 @@ export function useProducts(): UseProductsReturn {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showDeleted, setShowDeleted] = useState(false);
+  const [showDeleted, setShowDeleted] = usePersistedState(STORAGE_KEYS.PRODUCTS_SHOW_DELETED, false);
 
   // Загрузка продуктов
   const loadProducts = useCallback(() => {

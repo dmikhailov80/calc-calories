@@ -3,7 +3,8 @@
 import { useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { ChefHat, Search, Plus, Trash2 } from 'lucide-react';
-import { useRecipes, useRecipeModal, useConfirmModal } from '@/hooks';
+import { useRecipes, useRecipeModal, useConfirmModal, usePersistedState } from '@/hooks';
+import { STORAGE_KEYS } from '@/lib/storage';
 import { RecipeCard } from '@/components/RecipeCard';
 import { RecipeDetails } from '@/components/RecipeDetails';
 import RecipeModal from '@/components/RecipeModal';
@@ -42,7 +43,7 @@ export default function RecipesPage() {
   } = useConfirmModal();
   
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = usePersistedState(STORAGE_KEYS.RECIPES_SEARCH, '');
   
   // Подсчет удаленных рецептов
   const deletedCount = getDeletedRecipesCount();
@@ -61,7 +62,8 @@ export default function RecipesPage() {
   const handleDeleteRecipe = useCallback((recipeId: string) => {
     const recipe = recipes.find(r => r.id === recipeId);
     if (recipe) {
-      openDeleteModal(recipe);
+      // Приводим Recipe к типу, который ожидает openDeleteModal
+      openDeleteModal(recipe as any);
     }
   }, [recipes, openDeleteModal]);
 

@@ -16,6 +16,8 @@ import {
   getOriginalSystemRecipe,
   calculateRecipeNutrition
 } from '@/lib/recipes-data';
+import { usePersistedState } from './usePersistedState';
+import { STORAGE_KEYS } from '@/lib/storage';
 
 export interface UseRecipesReturn {
   recipes: Recipe[];
@@ -42,7 +44,7 @@ export function useRecipes(): UseRecipesReturn {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showDeleted, setShowDeleted] = useState(false);
+  const [showDeleted, setShowDeleted] = usePersistedState(STORAGE_KEYS.RECIPES_SHOW_DELETED, false);
 
   // Загрузка рецептов
   const loadRecipes = useCallback(() => {

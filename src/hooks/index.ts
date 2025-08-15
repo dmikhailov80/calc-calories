@@ -10,6 +10,7 @@ export { useProductSearch, clearSearchCache } from './useProductSearch';
 export { useDebounced, useDebouncedSearch, useDebouncedWithForce } from './useDebounced';
 export { useRecipes } from './useRecipes';
 export { useRecipeModal } from './useRecipeModal';
+export { usePersistedState } from './usePersistedState';
 
 export type { UseProductsReturn } from './useProducts';
 export type { UseProductFiltersReturn, ProductFilters } from './useProductFilters';

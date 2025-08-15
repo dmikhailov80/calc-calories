@@ -1,7 +1,10 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { Product, getAllCategories, getCategoryKey } from '@/lib/products-data';
+import { Product, PRODUCT_CATEGORIES } from '@/lib/products-data';
+import { usePersistedState } from './usePersistedState';
+import { STORAGE_KEYS } from '@/lib/storage';
+import type { ProductCategory } from '@/lib/ data/categories';
 
 export interface ProductFilters {
   searchQuery: string;
@@ -11,9 +14,9 @@ export interface ProductFilters {
 export interface UseProductFiltersReturn {
   filters: ProductFilters;
   filteredProducts: Product[];
-  categories: string[];
+  categories: ProductCategory[];
   setSearchQuery: (query: string) => void;
-  setSelectedCategory: (category: string) => void;
+  setSelectedCategory: (categoryKey: string) => void;
   clearFilters: () => void;
   hasActiveFilters: boolean;
 }
@@ -23,20 +26,20 @@ export interface UseProductFiltersReturn {
  * Инкапсулирует логику фильтрации по категориям и поиску
  */
 export function useProductFilters(products: Product[]): UseProductFiltersReturn {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = usePersistedState(STORAGE_KEYS.PRODUCTS_SEARCH, '');
+  const [selectedCategory, setSelectedCategory] = usePersistedState(STORAGE_KEYS.PRODUCTS_CATEGORY, 'all');
 
-  // Получаем все категории - мемоизируем статический результат
-  const categories = useMemo(() => getAllCategories(), []);
+  // Получаем все категории как объекты - мемоизируем статический результат
+  const categories = useMemo(() => Object.values(PRODUCT_CATEGORIES), []);
 
   // Мемоизируем нормализованный поисковый запрос
   const normalizedSearchQuery = useMemo(() => {
     return searchQuery.toLowerCase().trim();
   }, [searchQuery]);
 
-  // Мемоизируем ключ категории
+  // Мемоизируем ключ категории (теперь selectedCategory уже содержит key)
   const categoryKey = useMemo(() => {
-    return selectedCategory !== 'all' ? getCategoryKey(selectedCategory) : null;
+    return selectedCategory !== 'all' ? selectedCategory : null;
   }, [selectedCategory]);
 
   // Фильтрация продуктов с улучшенной производительностью
@@ -76,8 +79,8 @@ export function useProductFilters(products: Product[]): UseProductFiltersReturn 
     setSearchQuery(query);
   }, []);
 
-  const handleSetSelectedCategory = useCallback((category: string) => {
-    setSelectedCategory(category);
+  const handleSetSelectedCategory = useCallback((categoryKey: string) => {
+    setSelectedCategory(categoryKey);
   }, []);
 
   return {
