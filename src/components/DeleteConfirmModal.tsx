@@ -56,9 +56,11 @@ export default function DeleteConfirmModal({ isOpen, onClose, onConfirm, product
           {/* Информация о продукте */}
           <div className="bg-secondary/30 p-3 rounded-lg">
             <p className="font-semibold text-foreground">{product.name}</p>
-            <p className="text-sm text-muted-foreground">
-              {product.calories} ккал • {product.protein}г белков • {product.fat}г жиров • {product.carbs}г углеводов
-            </p>
+            {product.description && (
+              <p className="text-sm text-muted-foreground">
+                {product.description}
+              </p>
+            )}
           </div>
 
           {/* Описание действия */}

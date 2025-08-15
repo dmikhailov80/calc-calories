@@ -4,8 +4,8 @@ import { MEASUREMENT_UNITS, createCustomUnit, UnitType } from '../units';
 
 export const PRODUCTS_DATABASE: Product[] = [
   // Молочные продукты
-  { id: '550e8400-e29b-41d4-a716-446655440001', name: 'Молоко 1%', category: PRODUCT_CATEGORIES.DAIRY.key, calories: 40, protein: 3, fat: 1, carbs: 4, measurementUnits: [] },
-  { id: '550e8400-e29b-41d4-a716-446655440002', name: 'Молоко 3,2%', category: PRODUCT_CATEGORIES.DAIRY.key, calories: 59, protein: 2.9, fat: 3.2, carbs: 3.8, measurementUnits: [] },
+  { id: '550e8400-e29b-41d4-a716-446655440001', name: 'Молоко 1%', category: PRODUCT_CATEGORIES.DAIRY.key, calories: 40, protein: 3, fat: 1, carbs: 4, measurementUnits: [], description: 'Натуральное коровье молоко с низким содержанием жира' },
+  { id: '550e8400-e29b-41d4-a716-446655440002', name: 'Молоко 3,2%', category: PRODUCT_CATEGORIES.DAIRY.key, calories: 59, protein: 2.9, fat: 3.2, carbs: 3.8, measurementUnits: [], description: 'Цельное коровье молоко стандартной жирности' },
   { id: '550e8400-e29b-41d4-a716-446655440003', name: 'Молоко козье', category: PRODUCT_CATEGORIES.DAIRY.key, calories: 77, protein: 2.8, fat: 3.2, carbs: 8.6, measurementUnits: [] },
   { id: '550e8400-e29b-41d4-a716-446655440004', name: 'Молоко сгущенное', category: PRODUCT_CATEGORIES.DAIRY.key, calories: 313, protein: 0, fat: 0, carbs: 53.9, measurementUnits: [
     MEASUREMENT_UNITS.TEASPOON,    // 5г
@@ -17,8 +17,8 @@ export const PRODUCTS_DATABASE: Product[] = [
   { id: '550e8400-e29b-41d4-a716-446655440008', name: 'Ряженка 6%', category: PRODUCT_CATEGORIES.DAIRY.key, calories: 92, protein: 5, fat: 6, carbs: 3.5 },
   { id: '550e8400-e29b-41d4-a716-446655440009', name: 'Сметана 15%', category: PRODUCT_CATEGORIES.DAIRY.key, calories: 162, protein: 2.6, fat: 15, carbs: 3.6 },
   { id: '550e8400-e29b-41d4-a716-446655440010', name: 'Сметана 25%', category: PRODUCT_CATEGORIES.DAIRY.key, calories: 250, protein: 2.4, fat: 25, carbs: 3.2 },
-  { id: '550e8400-e29b-41d4-a716-446655440011', name: 'Творог 9%', category: PRODUCT_CATEGORIES.DAIRY.key, calories: 169, protein: 18, fat: 9, carbs: 3 },
-  { id: '550e8400-e29b-41d4-a716-446655440012', name: 'Творог обезжиренный', category: PRODUCT_CATEGORIES.DAIRY.key, calories: 86, protein: 18, fat: 0.6, carbs: 1.5 },
+  { id: '550e8400-e29b-41d4-a716-446655440011', name: 'Творог 9%', category: PRODUCT_CATEGORIES.DAIRY.key, calories: 169, protein: 18, fat: 9, carbs: 3, description: 'Классический творог средней жирности, источник кальция' },
+  { id: '550e8400-e29b-41d4-a716-446655440012', name: 'Творог обезжиренный', category: PRODUCT_CATEGORIES.DAIRY.key, calories: 86, protein: 18, fat: 0.6, carbs: 1.5, description: 'Диетический творог с минимальным содержанием жира' },
   { id: '550e8400-e29b-41d4-a716-446655440013', name: 'Сыр голландский', category: PRODUCT_CATEGORIES.DAIRY.key, calories: 356, protein: 24.9, fat: 27.4, carbs: 2.2 },
   { id: '550e8400-e29b-41d4-a716-446655440014', name: 'Сыр российский', category: PRODUCT_CATEGORIES.DAIRY.key, calories: 337, protein: 23.2, fat: 29.5, carbs: 0 },
 
@@ -26,9 +26,9 @@ export const PRODUCTS_DATABASE: Product[] = [
   { id: '550e8400-e29b-41d4-a716-446655440015', name: 'Говядина отварная', category: PRODUCT_CATEGORIES.MEAT_FISH.key, calories: 254, protein: 26, fat: 16.8, carbs: 0 },
   { id: '550e8400-e29b-41d4-a716-446655440016', name: 'Свинина отварная', category: PRODUCT_CATEGORIES.MEAT_FISH.key, calories: 351, protein: 22.6, fat: 28.0, carbs: 0 },
   { id: '550e8400-e29b-41d4-a716-446655440017', name: 'Курица отварная', category: PRODUCT_CATEGORIES.MEAT_FISH.key, calories: 137, protein: 25.2, fat: 4.2, carbs: 0.7 },
-  { id: '550e8400-e29b-41d4-a716-446655440018', name: 'Куриная грудка', category: PRODUCT_CATEGORIES.MEAT_FISH.key, calories: 113, protein: 23.6, fat: 1.9, carbs: 0.4 },
+  { id: '550e8400-e29b-41d4-a716-446655440018', name: 'Куриная грудка', category: PRODUCT_CATEGORIES.MEAT_FISH.key, calories: 113, protein: 23.6, fat: 1.9, carbs: 0.4, description: 'Диетическое белое мясо без кожи, отличный источник белка' },
   { id: '550e8400-e29b-41d4-a716-446655440019', name: 'Индейка', category: PRODUCT_CATEGORIES.MEAT_FISH.key, calories: 197, protein: 21.6, fat: 12.0, carbs: 0.8 },
-  { id: '550e8400-e29b-41d4-a716-446655440020', name: 'Треска', category: PRODUCT_CATEGORIES.MEAT_FISH.key, calories: 75, protein: 17.5, fat: 0.6, carbs: 0 },
+  { id: '550e8400-e29b-41d4-a716-446655440020', name: 'Треска', category: PRODUCT_CATEGORIES.MEAT_FISH.key, calories: 75, protein: 17.5, fat: 0.6, carbs: 0, description: 'Нежирная морская рыба, богатая белком и витаминами' },
   { id: '550e8400-e29b-41d4-a716-446655440021', name: 'Лосось', category: PRODUCT_CATEGORIES.MEAT_FISH.key, calories: 142, protein: 19.8, fat: 6.3, carbs: 0 },
   { id: '550e8400-e29b-41d4-a716-446655440022', name: 'Тунец', category: PRODUCT_CATEGORIES.MEAT_FISH.key, calories: 96, protein: 23.0, fat: 1.0, carbs: 0 },
   { id: '550e8400-e29b-41d4-a716-446655440023', name: 'Скумбрия', category: PRODUCT_CATEGORIES.MEAT_FISH.key, calories: 191, protein: 18.0, fat: 13.2, carbs: 0 },

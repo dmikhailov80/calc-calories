@@ -9,6 +9,7 @@ export interface Product {
   fat: number;      // g per 100g
   carbs: number;    // g per 100g
   measurementUnits: MeasurementUnit[]; // дополнительные единицы измерения (граммы добавляются автоматически)
+  description?: string; // краткое описание продукта
   isDeleted?: boolean; // флаг для удалённых продуктов (используется только в админ-режиме)
 }
 
