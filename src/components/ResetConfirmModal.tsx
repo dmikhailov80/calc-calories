@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { X, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Product, getCategoryName } from '@/lib/products-data';
+import { MeasurementUnit } from '@/lib/units';
 
 interface ResetConfirmModalProps {
   isOpen: boolean;
@@ -20,6 +21,66 @@ export default function ResetConfirmModal({
   product, 
   originalProduct 
 }: ResetConfirmModalProps) {
+  // Функция для получения добавленных единиц измерения (полностью новые типы/размеры)
+  const getAddedUnits = (): MeasurementUnit[] => {
+    if (!product?.measurementUnits) return [];
+    if (!originalProduct?.measurementUnits) return product.measurementUnits;
+    
+    return product.measurementUnits.filter(currentUnit => 
+      !originalProduct.measurementUnits.some(originalUnit => 
+        currentUnit.type === originalUnit.type && currentUnit.size === originalUnit.size
+      )
+    );
+  };
+
+  // Функция для получения удаленных единиц измерения (полностью отсутствующие типы/размеры)
+  const getRemovedUnits = (): MeasurementUnit[] => {
+    if (!originalProduct?.measurementUnits) return [];
+    if (!product?.measurementUnits) return originalProduct.measurementUnits;
+    
+    return originalProduct.measurementUnits.filter(originalUnit => 
+      !product.measurementUnits.some(currentUnit => 
+        originalUnit.type === currentUnit.type && originalUnit.size === currentUnit.size
+      )
+    );
+  };
+
+  // Функция для получения измененных единиц измерения (те же типы/размеры, но разные веса или названия)
+  const getModifiedUnits = (): { current: MeasurementUnit; original: MeasurementUnit }[] => {
+    if (!product?.measurementUnits || !originalProduct?.measurementUnits) return [];
+    
+    const modified: { current: MeasurementUnit; original: MeasurementUnit }[] = [];
+    
+    product.measurementUnits.forEach(currentUnit => {
+      const originalUnit = originalProduct.measurementUnits.find(ou => 
+        ou.type === currentUnit.type && ou.size === currentUnit.size
+      );
+      
+      if (originalUnit && (
+        originalUnit.weightInGrams !== currentUnit.weightInGrams ||
+        originalUnit.displayName !== currentUnit.displayName
+      )) {
+        modified.push({ current: currentUnit, original: originalUnit });
+      }
+    });
+    
+    return modified;
+  };
+
+  // Функция для сравнения единиц измерения
+  const measurementUnitsChanged = () => {
+    if (!product?.measurementUnits || !originalProduct?.measurementUnits) {
+      return (product?.measurementUnits?.length || 0) !== (originalProduct?.measurementUnits?.length || 0);
+    }
+    
+    // Проверяем различия через наши специализированные функции
+    const added = getAddedUnits();
+    const removed = getRemovedUnits();
+    const modified = getModifiedUnits();
+    
+    return added.length > 0 || removed.length > 0 || modified.length > 0;
+  };
+
   // Обработка нажатия клавиши Esc
   useEffect(() => {
     const handleEscapeKey = (event: KeyboardEvent) => {
@@ -100,7 +161,8 @@ export default function ResetConfirmModal({
                 product.calories !== originalProduct.calories ||
                 product.protein !== originalProduct.protein ||
                 product.fat !== originalProduct.fat ||
-                product.carbs !== originalProduct.carbs) && (
+                product.carbs !== originalProduct.carbs ||
+                measurementUnitsChanged()) && (
                 <div className="grid grid-cols-3 gap-2 text-sm">
                   <div className="font-medium text-muted-foreground">Показатель</div>
                   <div className="font-medium text-red-600">Текущее</div>
@@ -161,6 +223,40 @@ export default function ResetConfirmModal({
                   <div className="text-green-600">{originalProduct.carbs}</div>
                 </div>
               )}
+
+              {/* Единицы измерения, если изменены */}
+              {measurementUnitsChanged() && (
+                <div className="border-t pt-2 mt-2">
+                  <div className="font-medium text-muted-foreground mb-2 text-sm">Единицы измерения:</div>
+                  
+                  {/* Добавленные единицы */}
+                  {getAddedUnits().map((unit, index) => (
+                    <div key={`added-${index}`} className="grid grid-cols-3 gap-2 text-sm py-1">
+                      <div className="text-muted-foreground">Добавлено:</div>
+                      <div className="text-green-600">{unit.displayName} ({unit.weightInGrams}г)</div>
+                      <div className="text-red-600">будет удалено</div>
+                    </div>
+                  ))}
+                  
+                  {/* Удаленные единицы */}
+                  {getRemovedUnits().map((unit, index) => (
+                    <div key={`removed-${index}`} className="grid grid-cols-3 gap-2 text-sm py-1">
+                      <div className="text-muted-foreground">Удалено:</div>
+                      <div className="text-red-600">отсутствует</div>
+                      <div className="text-green-600">{unit.displayName} ({unit.weightInGrams}г)</div>
+                    </div>
+                  ))}
+                  
+                  {/* Измененные единицы */}
+                  {getModifiedUnits().map((unitPair, index) => (
+                    <div key={`modified-${index}`} className="grid grid-cols-3 gap-2 text-sm py-1">
+                      <div className="text-muted-foreground">Изменено:</div>
+                      <div className="text-red-600">{unitPair.current.displayName} ({unitPair.current.weightInGrams}г)</div>
+                      <div className="text-green-600">{unitPair.original.displayName} ({unitPair.original.weightInGrams}г)</div>
+                    </div>
+                  ))}
+                </div>
+              )}
               
               {/* Сообщение если ничего не изменилось */}
               {!(product.name !== originalProduct.name || 
@@ -168,7 +264,8 @@ export default function ResetConfirmModal({
                 product.calories !== originalProduct.calories ||
                 product.protein !== originalProduct.protein ||
                 product.fat !== originalProduct.fat ||
-                product.carbs !== originalProduct.carbs) && (
+                product.carbs !== originalProduct.carbs ||
+                measurementUnitsChanged()) && (
                 <div className="text-center text-muted-foreground text-sm py-2">
                   Нет изменений для сброса
                 </div>

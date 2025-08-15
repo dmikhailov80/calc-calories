@@ -1,3 +1,5 @@
+import { MeasurementUnit, MEASUREMENT_UNITS } from './units';
+
 export interface Product {
   id: string;
   name: string;
@@ -6,6 +8,7 @@ export interface Product {
   protein: number;  // g per 100g
   fat: number;      // g per 100g
   carbs: number;    // g per 100g
+  measurementUnits: MeasurementUnit[]; // дополнительные единицы измерения (граммы добавляются автоматически)
 }
 
 // Импортируем данные из отдельных файлов
@@ -33,6 +36,19 @@ export function getCategoryName(categoryKey: string): string {
 export function getCategoryKey(categoryName: string): string {
   const categoryEntry = Object.values(PRODUCT_CATEGORIES).find(cat => cat.name === categoryName);
   return categoryEntry ? categoryEntry.key : categoryName;
+}
+
+// Функция для получения полного списка единиц измерения продукта (включая граммы)
+export function getProductMeasurementUnits(product: Product): MeasurementUnit[] {
+  // Всегда добавляем граммы как первую (базовую) единицу
+  const allUnits = [MEASUREMENT_UNITS.GRAMS_100];
+  
+  // Добавляем дополнительные единицы, если они есть
+  if (product.measurementUnits && product.measurementUnits.length > 0) {
+    allUnits.push(...product.measurementUnits);
+  }
+  
+  return allUnits;
 }
 
 export function getProductById(id: string): Product | undefined {

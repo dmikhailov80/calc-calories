@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { Edit, Trash2, RotateCcw } from 'lucide-react';
-import { Product, getCategoryName, isModifiedSystemProduct } from '@/lib/products-data';
+import { Product, getCategoryName, isModifiedSystemProduct, getProductMeasurementUnits } from '@/lib/products-data';
 import { Button } from '@/components/ui/button';
+import { formatUnitDisplay } from '@/lib/units';
 
 interface ProductCardProps {
   product: Product;
@@ -54,7 +55,21 @@ export default function ProductCard({ product, onEdit, onDelete, onReset }: Prod
               </span>
             )}
           </div>
-          <p className="text-base text-muted-foreground mt-1">{getCategoryName(product.category)}</p>
+          <div className="mt-1">
+            <p className="text-base text-muted-foreground">{getCategoryName(product.category)}</p>
+            {product.measurementUnits && product.measurementUnits.length > 0 && (
+              <div className="text-sm text-muted-foreground mt-1">
+                <p className="font-medium">Доступные единицы:</p>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {product.measurementUnits.map((unit, index) => (
+                    <span key={index} className="inline-block bg-secondary/50 px-2 py-1 rounded text-xs">
+                      {formatUnitDisplay(unit)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
         
         {/* Питательные данные */}

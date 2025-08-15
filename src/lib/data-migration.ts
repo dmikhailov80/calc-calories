@@ -1,6 +1,7 @@
 import { Product } from './products-data';
 import { PRODUCT_CATEGORIES, getCategoryByKey } from './ data/categories';
 import { PRODUCTS_DATABASE } from './ data/products';
+import { MEASUREMENT_UNITS, MeasurementUnit } from './units';
 
 export interface MigrationResult {
   migratedProducts: Product[];
@@ -45,6 +46,90 @@ function isValidNumber(value: any): boolean {
   return typeof value === 'number' && !isNaN(value) && value >= 0;
 }
 
+// Проверяет, является ли строка валидным типом единицы измерения
+function isValidUnitType(type: string): boolean {
+  const validTypes = ['grams', 'pieces', 'spoons', 'slices'];
+  return validTypes.includes(type);
+}
+
+// Проверяет, является ли значение валидным размером для данного типа
+function isValidSize(type: string, size: any): boolean {
+  if (type === 'pieces') {
+    return size === undefined || ['small', 'medium', 'large'].includes(size);
+  }
+  if (type === 'spoons') {
+    return size === undefined || ['teaspoon', 'tablespoon'].includes(size);
+  }
+  // Для grams и slices size должен отсутствовать
+  return size === undefined;
+}
+
+// Проверяет и исправляет единицы измерения
+function validateMeasurementUnits(value: any): MeasurementUnit[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  
+  const validUnits: MeasurementUnit[] = [];
+  
+  for (const unit of value) {
+    // Базовая проверка структуры объекта
+    if (!unit || typeof unit !== 'object') {
+      continue;
+    }
+
+    // Проверяем обязательные поля
+    if (typeof unit.type !== 'string' || 
+        typeof unit.weightInGrams !== 'number' ||
+        typeof unit.displayName !== 'string') {
+      continue;
+    }
+
+    // Проверяем валидность типа единицы измерения
+    if (!isValidUnitType(unit.type)) {
+      continue;
+    }
+
+    // Проверяем вес (должен быть положительным числом, разумные пределы)
+    if (isNaN(unit.weightInGrams) || 
+        unit.weightInGrams <= 0 || 
+        unit.weightInGrams > 10000) { // максимум 10кг для одной единицы
+      continue;
+    }
+
+    // Проверяем displayName (не должно быть пустой строкой)
+    if (unit.displayName.trim().length === 0) {
+      continue;
+    }
+
+    // Проверяем размер для соответствующих типов
+    if (!isValidSize(unit.type, unit.size)) {
+      continue;
+    }
+
+    // Не сохраняем граммы - они добавляются автоматически при отображении
+    if (unit.weightInGrams === 100 && unit.type === 'grams') {
+      continue;
+    }
+
+    // Создаем валидный объект единицы измерения
+    const validUnit: MeasurementUnit = {
+      type: unit.type as any, // TypeScript cast, мы уже проверили валидность
+      weightInGrams: unit.weightInGrams,
+      displayName: unit.displayName.trim()
+    };
+
+    // Добавляем size только если он валиден и нужен
+    if (unit.size && isValidSize(unit.type, unit.size)) {
+      validUnit.size = unit.size;
+    }
+
+    validUnits.push(validUnit);
+  }
+  
+  return validUnits;
+}
+
 // Валидирует и мигрирует один продукт
 function migrateProduct(product: any): { product: Product; issues: MigrationIssue[] } {
   const issues: MigrationIssue[] = [];
@@ -64,7 +149,7 @@ function migrateProduct(product: any): { product: Product; issues: MigrationIssu
   }
 
   // Проверяем обязательные поля
-  const requiredFields: (keyof Product)[] = ['name', 'category', 'calories', 'protein', 'fat', 'carbs'];
+  const requiredFields: (keyof Product)[] = ['name', 'category', 'calories', 'protein', 'fat', 'carbs', 'measurementUnits'];
   
   for (const field of requiredFields) {
     if (!(field in migratedProduct)) {
@@ -81,6 +166,9 @@ function migrateProduct(product: any): { product: Product; issues: MigrationIssu
         case 'fat':
         case 'carbs':
           defaultValue = 0;
+          break;
+        case 'measurementUnits':
+          defaultValue = [];
           break;
       }
       
@@ -141,8 +229,55 @@ function migrateProduct(product: any): { product: Product; issues: MigrationIssu
     }
   }
 
+  // Миграция со старых полей unit и pieceWeight
+  if ('unit' in migratedProduct || 'pieceWeight' in migratedProduct) {
+    const unit = migratedProduct.unit;
+    const pieceWeight = migratedProduct.pieceWeight;
+    
+    let newUnits: MeasurementUnit[] = [];
+    
+    if (unit && pieceWeight && typeof pieceWeight === 'number' && pieceWeight > 0) {
+      // Создаем единицу измерения на основе старых полей (без граммов)
+      const customUnit = {
+        type: 'pieces',
+        weightInGrams: pieceWeight,
+        displayName: `1${unit} (${pieceWeight}г)`
+      };
+      newUnits.push(customUnit as MeasurementUnit);
+    }
+    
+    migratedProduct.measurementUnits = newUnits;
+    delete migratedProduct.unit;
+    delete migratedProduct.pieceWeight;
+    
+    issues.push({
+      type: 'invalid_value',
+      productName: migratedProduct.name,
+      field: 'measurementUnits',
+      originalValue: { unit, pieceWeight },
+      newValue: newUnits,
+      message: `Мигрированы устаревшие поля unit и pieceWeight в новую систему единиц измерения`
+    });
+  }
+
+  // Проверяем и исправляем единицы измерения
+  const originalUnits = migratedProduct.measurementUnits;
+  const validatedUnits = validateMeasurementUnits(originalUnits);
+  
+  if (JSON.stringify(originalUnits) !== JSON.stringify(validatedUnits)) {
+    migratedProduct.measurementUnits = validatedUnits;
+    issues.push({
+      type: 'invalid_value',
+      productName: migratedProduct.name,
+      field: 'measurementUnits',
+      originalValue: originalUnits,
+      newValue: validatedUnits,
+      message: `Исправлены единицы измерения: удалены граммы (добавляются автоматически) и некорректные единицы`
+    });
+  }
+
   // Удаляем лишние поля
-  const allowedFields = new Set(['id', 'name', 'category', 'calories', 'protein', 'fat', 'carbs']);
+  const allowedFields = new Set(['id', 'name', 'category', 'calories', 'protein', 'fat', 'carbs', 'measurementUnits']);
   for (const field in migratedProduct) {
     if (!allowedFields.has(field)) {
       delete migratedProduct[field];

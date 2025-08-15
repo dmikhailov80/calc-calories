@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Product, PRODUCT_CATEGORIES, getCategoryName, getCategoryKey } from '@/lib/products-data';
+import { MeasurementUnit, MEASUREMENT_UNITS, UnitType, createCustomUnit, PieceSize, SpoonType } from '@/lib/units';
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, mode 
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [measurementUnits, setMeasurementUnits] = useState<MeasurementUnit[]>([]);
 
   // Заполняем форму данными продукта при открытии в режиме редактирования
   useEffect(() => {
@@ -39,6 +41,7 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, mode 
           fat: product.fat.toString(),
           carbs: product.carbs.toString()
         });
+        setMeasurementUnits(product.measurementUnits || []);
       } else {
         // Сбрасываем форму для режима добавления
         setFormData({
@@ -49,6 +52,7 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, mode 
           fat: '',
           carbs: ''
         });
+        setMeasurementUnits([]);
       }
     }
   }, [isOpen, isEditMode, product]);
@@ -125,7 +129,8 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, mode 
       calories: Number(formData.calories),
       protein: Number(formData.protein),
       fat: Number(formData.fat),
-      carbs: Number(formData.carbs)
+      carbs: Number(formData.carbs),
+      measurementUnits: measurementUnits
     };
 
     onSubmit(productData, isEditMode ? product.id : undefined);
@@ -141,8 +146,28 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, mode 
       fat: '',
       carbs: ''
     });
+    setMeasurementUnits([]);
     setErrors({});
     onClose();
+  };
+
+  // Функции для управления единицами измерения
+  const addMeasurementUnit = (unit: MeasurementUnit) => {
+    setMeasurementUnits(prev => [...prev, unit]);
+  };
+
+  const removeMeasurementUnit = (index: number) => {
+    setMeasurementUnits(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateMeasurementUnit = (index: number, newWeight: number) => {
+    setMeasurementUnits(prev => 
+      prev.map((unit, i) => 
+        i === index 
+          ? { ...unit, weightInGrams: newWeight, displayName: unit.displayName.replace(/\(\d+г\)/, `(${newWeight}г)`) }
+          : unit
+      )
+    );
   };
 
   if (!isOpen) return null;
@@ -210,6 +235,8 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, mode 
               ))}
             </select>
           </div>
+
+
 
           {/* Питательные вещества */}
           <div className="grid grid-cols-2 gap-4">
@@ -295,6 +322,147 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, mode 
                 placeholder="0"
               />
               {errors.carbs && <p className="text-red-500 text-sm mt-1">{errors.carbs}</p>}
+            </div>
+          </div>
+
+          {/* Единицы измерения */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Единицы измерения
+            </label>
+            
+            <div className="space-y-2 mb-3">
+              <div className="flex items-center gap-2 p-2 bg-primary/10 rounded">
+                <span className="flex-1 text-sm font-medium">100г (базовая единица)</span>
+                <span className="text-xs text-muted-foreground">всегда доступно</span>
+              </div>
+              {measurementUnits.map((unit, index) => (
+                <div key={index} className="flex items-center gap-2 p-2 bg-secondary/30 rounded">
+                  <span className="flex-1 text-sm">{unit.displayName}</span>
+                  <input
+                    type="number"
+                    min="0.1"
+                    step="0.1"
+                    value={unit.weightInGrams}
+                    onChange={(e) => updateMeasurementUnit(index, Number(e.target.value))}
+                    className="w-20 px-2 py-1 text-sm border rounded"
+                    placeholder="Вес"
+                  />
+                  <span className="text-sm text-muted-foreground">г</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeMeasurementUnit(index)}
+                    className="p-1 h-auto"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-3">
+              {/* Штуки */}
+              <div>
+                <span className="text-sm font-medium text-foreground mb-2 block">Штуки:</span>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addMeasurementUnit(MEASUREMENT_UNITS.PIECE_SMALL)}
+                    className="text-xs"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Маленькая (30г)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addMeasurementUnit(MEASUREMENT_UNITS.PIECE_MEDIUM)}
+                    className="text-xs"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Средняя (50г)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addMeasurementUnit(MEASUREMENT_UNITS.PIECE_LARGE)}
+                    className="text-xs"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Большая (70г)
+                  </Button>
+                </div>
+              </div>
+
+              {/* Ложки */}
+              <div>
+                <span className="text-sm font-medium text-foreground mb-2 block">Ложки:</span>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addMeasurementUnit(MEASUREMENT_UNITS.TEASPOON)}
+                    className="text-xs"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Чайная (5г)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addMeasurementUnit(MEASUREMENT_UNITS.TABLESPOON)}
+                    className="text-xs"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Столовая (15г)
+                  </Button>
+                </div>
+              </div>
+
+              {/* Кусочки */}
+              <div>
+                <span className="text-sm font-medium text-foreground mb-2 block">Кусочки:</span>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addMeasurementUnit(MEASUREMENT_UNITS.SLICE_THIN)}
+                    className="text-xs"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Тонкий (20г)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addMeasurementUnit(MEASUREMENT_UNITS.SLICE_MEDIUM)}
+                    className="text-xs"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Средний (25г)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addMeasurementUnit(MEASUREMENT_UNITS.SLICE_THICK)}
+                    className="text-xs"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Толстый (30г)
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
 
