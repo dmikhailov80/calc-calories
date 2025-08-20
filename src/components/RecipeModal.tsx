@@ -202,7 +202,7 @@ function RecipeModal({ isOpen, onClose, onSubmit, recipe, mode = 'add' }: Recipe
       onClick={handleClose}
     >
       <div 
-        className="bg-background min-[420px]:rounded-lg border shadow-lg w-full min-[420px]:max-w-2xl h-full min-[420px]:h-auto min-[420px]:max-h-[90vh] overflow-y-auto"
+        className="bg-background min-[420px]:rounded-lg border shadow-lg w-full min-[420px]:max-w-2xl max-w-4xl h-full min-[420px]:h-auto min-[420px]:max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Заголовок */}
@@ -217,7 +217,7 @@ function RecipeModal({ isOpen, onClose, onSubmit, recipe, mode = 'add' }: Recipe
         </div>
 
         {/* Форма */}
-        <form onSubmit={handleSubmit} className="p-4 min-[420px]:p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-4 min-[420px]:p-6 space-y-6 max-w-3xl mx-auto">
           {/* Название рецепта */}
           <FormInput
             id="name"
@@ -264,42 +264,59 @@ function RecipeModal({ isOpen, onClose, onSubmit, recipe, mode = 'add' }: Recipe
                 if (!product) return null;
 
                 return (
-                  <div key={index} className="flex items-center gap-2 p-3 bg-secondary/30 rounded-lg">
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{product.name}</p>
+                  <div key={index} className="bg-secondary/30 rounded-lg border border-secondary/50 overflow-hidden">
+                    {/* Первая строка - название продукта и кнопка удаления */}
+                    <div className="flex items-center justify-between p-3 bg-secondary/20">
+                      <p className="font-medium text-sm text-foreground">{product.name}</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeIngredient(index)}
+                        className="p-1.5 h-auto text-destructive hover:bg-destructive hover:text-white border-destructive/30"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
-                    <input
-                      type="number"
-                      min="0.1"
-                      step="0.1"
-                      value={ingredient.amount}
-                      onChange={(e) => updateIngredientAmount(index, Number(e.target.value))}
-                      className="w-20 px-2 py-1 text-sm border rounded"
-                      placeholder="Кол-во"
-                    />
-                    <select
-                      value={ingredient.unit.displayName}
-                      onChange={(e) => updateIngredientUnit(index, e.target.value)}
-                      className="px-2 py-1 text-sm border rounded"
-                    >
-                      <option value={MEASUREMENT_UNITS.GRAMS_100.displayName}>
-                        {formatUnitDisplay(MEASUREMENT_UNITS.GRAMS_100)}
-                      </option>
-                      {product.measurementUnits?.map((unit, unitIndex) => (
-                        <option key={unitIndex} value={unit.displayName}>
-                          {formatUnitDisplay(unit)}
-                        </option>
-                      ))}
-                    </select>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeIngredient(index)}
-                      className="p-1 h-auto text-destructive hover:bg-destructive hover:text-white"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    
+                    {/* Вторая строка - контролы количества и единиц измерения */}
+                    <div className="p-3 pt-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Количество
+                          </label>
+                          <input
+                            type="number"
+                            min="0.5"
+                            step="0.5"
+                            value={ingredient.amount}
+                            onChange={(e) => updateIngredientAmount(index, Number(e.target.value))}
+                            className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                            placeholder="Кол-во"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                            Единица измерения
+                          </label>
+                          <select
+                            value={ingredient.unit.displayName}
+                            onChange={(e) => updateIngredientUnit(index, e.target.value)}
+                            className="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                          >
+                            <option value={MEASUREMENT_UNITS.GRAMS_100.displayName}>
+                              граммы
+                            </option>
+                            {product.measurementUnits?.map((unit, unitIndex) => (
+                              <option key={unitIndex} value={unit.displayName}>
+                                {formatUnitDisplay(unit)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
@@ -358,18 +375,18 @@ function RecipeModal({ isOpen, onClose, onSubmit, recipe, mode = 'add' }: Recipe
           </div>
 
           {/* Кнопки */}
-          <div className="flex space-x-3 pt-4">
+          <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-secondary/50">
             <Button
               type="button"
               variant="outline"
               onClick={handleClose}
-              className="flex-1"
+              className="flex-1 py-2.5"
             >
               Отмена
             </Button>
             <Button
               type="submit"
-              className="flex-1"
+              className="flex-1 py-2.5"
               disabled={!formData.name.trim() || formData.ingredients.length === 0}
             >
               {submitButtonText}
