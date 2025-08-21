@@ -79,15 +79,15 @@ export default function ProductsPage() {
   }, [products, openDeleteModal]);
 
   const handleConfirmDelete = useCallback(async () => {
-    if (deleteModal.product) {
-      const success = await deleteProduct(deleteModal.product.id);
+    if (deleteModal.item && 'category' in deleteModal.item) {
+      const success = await deleteProduct(deleteModal.item.id);
       if (success) {
         closeDeleteModal();
       } else {
         alert('Произошла ошибка при удалении продукта');
       }
     }
-  }, [deleteModal.product, deleteProduct, closeDeleteModal]);
+  }, [deleteModal.item, deleteProduct, closeDeleteModal]);
 
   const handleResetProduct = useCallback((productId: string) => {
     const product = products.find(p => p.id === productId);
@@ -99,15 +99,15 @@ export default function ProductsPage() {
   }, [products, getOriginalProduct, openResetModal]);
 
   const handleConfirmReset = useCallback(async () => {
-    if (resetModal.product) {
-      const success = await resetProduct(resetModal.product.id);
+    if (resetModal.item && 'category' in resetModal.item) {
+      const success = await resetProduct(resetModal.item.id);
       if (success) {
         closeResetModal();
       } else {
         alert('Произошла ошибка при сбросе продукта');
       }
     }
-  }, [resetModal.product, resetProduct, closeResetModal]);
+  }, [resetModal.item, resetProduct, closeResetModal]);
 
   const handleRestoreProduct = useCallback(async (productId: string) => {
     const success = await restoreProduct(productId);
@@ -312,7 +312,7 @@ export default function ProductsPage() {
         isOpen={deleteModal.isOpen}
         onClose={closeDeleteModal}
         onConfirm={handleConfirmDelete}
-        product={deleteModal.product}
+        product={deleteModal.item && 'category' in deleteModal.item ? deleteModal.item : null}
       />
 
       {/* Модальное окно подтверждения сброса */}
@@ -320,8 +320,8 @@ export default function ProductsPage() {
         isOpen={resetModal.isOpen}
         onClose={closeResetModal}
         onConfirm={handleConfirmReset}
-        product={resetModal.product}
-        originalProduct={resetModal.originalProduct || null}
+        product={resetModal.item && 'category' in resetModal.item ? resetModal.item : null}
+        originalProduct={resetModal.originalItem && 'category' in resetModal.originalItem ? resetModal.originalItem : null}
       />
     </div>
   );

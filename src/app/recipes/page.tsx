@@ -8,7 +8,8 @@ import { STORAGE_KEYS } from '@/lib/storage';
 import { RecipeCard } from '@/components/RecipeCard';
 import { RecipeDetails } from '@/components/RecipeDetails';
 import RecipeModal from '@/components/RecipeModal';
-import DeleteConfirmModal from '@/components/DeleteConfirmModal';
+import DeleteRecipeConfirmModal from '@/components/DeleteRecipeConfirmModal';
+import ResetRecipeConfirmModal from '@/components/ResetRecipeConfirmModal';
 import { Switch } from '@/components/ui/switch';
 import { Recipe, getDeletedRecipesCount } from '@/lib/recipes-data';
 
@@ -24,7 +25,8 @@ export default function RecipesPage() {
     updateRecipe, 
     deleteRecipe,
     resetRecipe,
-    restoreRecipe, 
+    restoreRecipe,
+    getOriginalRecipe,
     calculateNutrition 
   } = useRecipes();
   
@@ -38,8 +40,11 @@ export default function RecipesPage() {
   
   const { 
     deleteModal, 
+    resetModal,
     openDeleteModal, 
-    closeDeleteModal 
+    openResetModal,
+    closeDeleteModal,
+    closeResetModal
   } = useConfirmModal();
   
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
@@ -74,22 +79,35 @@ export default function RecipesPage() {
   }, [recipes, openDeleteModal]);
 
   const handleConfirmDelete = useCallback(async () => {
-    if (deleteModal.product) {
-      const success = await deleteRecipe(deleteModal.product.id);
+    if (deleteModal.item && 'ingredients' in deleteModal.item) {
+      const success = await deleteRecipe(deleteModal.item.id);
       if (success) {
         closeDeleteModal();
       } else {
         alert('Произошла ошибка при удалении рецепта');
       }
     }
-  }, [deleteModal.product, deleteRecipe, closeDeleteModal]);
+  }, [deleteModal.item, deleteRecipe, closeDeleteModal]);
 
-  const handleResetRecipe = useCallback(async (recipeId: string) => {
-    const success = await resetRecipe(recipeId);
-    if (!success) {
-      alert('Произошла ошибка при сбросе рецепта');
+  const handleResetRecipe = useCallback((recipeId: string) => {
+    const recipe = recipes.find(r => r.id === recipeId);
+    const originalRecipe = getOriginalRecipe(recipeId);
+    
+    if (recipe && originalRecipe) {
+      openResetModal(recipe, originalRecipe);
     }
-  }, [resetRecipe]);
+  }, [recipes, getOriginalRecipe, openResetModal]);
+
+  const handleConfirmReset = useCallback(async () => {
+    if (resetModal.item && 'ingredients' in resetModal.item) {
+      const success = await resetRecipe(resetModal.item.id);
+      if (success) {
+        closeResetModal();
+      } else {
+        alert('Произошла ошибка при сбросе рецепта');
+      }
+    }
+  }, [resetModal.item, resetRecipe, closeResetModal]);
 
   const handleRestoreRecipe = useCallback(async (recipeId: string) => {
     const success = await restoreRecipe(recipeId);
@@ -300,11 +318,20 @@ export default function RecipesPage() {
       />
 
       {/* Модальное окно подтверждения удаления */}
-      <DeleteConfirmModal
+      <DeleteRecipeConfirmModal
         isOpen={deleteModal.isOpen}
         onClose={closeDeleteModal}
         onConfirm={handleConfirmDelete}
-        product={deleteModal.product}
+        recipe={deleteModal.item && 'ingredients' in deleteModal.item ? deleteModal.item : null}
+      />
+
+      {/* Модальное окно подтверждения сброса */}
+      <ResetRecipeConfirmModal
+        isOpen={resetModal.isOpen}
+        onClose={closeResetModal}
+        onConfirm={handleConfirmReset}
+        recipe={resetModal.item && 'ingredients' in resetModal.item ? resetModal.item : null}
+        originalRecipe={resetModal.originalItem && 'ingredients' in resetModal.originalItem ? resetModal.originalItem : null}
       />
     </div>
   );

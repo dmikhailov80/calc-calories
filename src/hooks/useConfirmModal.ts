@@ -2,18 +2,19 @@
 
 import { useState, useCallback } from 'react';
 import { Product } from '@/lib/products-data';
+import { Recipe } from '@/lib/recipes-data';
 
-export interface ConfirmModalState {
+export interface ConfirmModalState<T = Product | Recipe> {
   isOpen: boolean;
-  product: Product | null;
-  originalProduct?: Product | null; // Для reset модалки
+  item: T | null;
+  originalItem?: T | null; // Для reset модалки
 }
 
 export interface UseConfirmModalReturn {
   deleteModal: ConfirmModalState;
   resetModal: ConfirmModalState;
-  openDeleteModal: (product: Product) => void;
-  openResetModal: (product: Product, originalProduct: Product) => void;
+  openDeleteModal: <T extends Product | Recipe>(item: T) => void;
+  openResetModal: <T extends Product | Recipe>(item: T, originalItem: T) => void;
   closeDeleteModal: () => void;
   closeResetModal: () => void;
 }
@@ -21,33 +22,34 @@ export interface UseConfirmModalReturn {
 /**
  * Custom hook для управления модальными окнами подтверждения
  * Инкапсулирует логику управления состоянием модалок удаления и сброса
+ * Поддерживает как продукты, так и рецепты
  */
 export function useConfirmModal(): UseConfirmModalReturn {
-  const [deleteModal, setDeleteModal] = useState<ConfirmModalState>({
+  const [deleteModal, setDeleteModal] = useState<ConfirmModalState<Product | Recipe>>({
     isOpen: false,
-    product: null
+    item: null
   });
 
-  const [resetModal, setResetModal] = useState<ConfirmModalState>({
+  const [resetModal, setResetModal] = useState<ConfirmModalState<Product | Recipe>>({
     isOpen: false,
-    product: null,
-    originalProduct: null
+    item: null,
+    originalItem: null
   });
 
   // Открытие модалки удаления
-  const openDeleteModal = useCallback((product: Product) => {
+  const openDeleteModal = useCallback(<T extends Product | Recipe>(item: T) => {
     setDeleteModal({
       isOpen: true,
-      product
+      item
     });
   }, []);
 
   // Открытие модалки сброса
-  const openResetModal = useCallback((product: Product, originalProduct: Product) => {
+  const openResetModal = useCallback(<T extends Product | Recipe>(item: T, originalItem: T) => {
     setResetModal({
       isOpen: true,
-      product,
-      originalProduct
+      item,
+      originalItem
     });
   }, []);
 
@@ -55,7 +57,7 @@ export function useConfirmModal(): UseConfirmModalReturn {
   const closeDeleteModal = useCallback(() => {
     setDeleteModal({
       isOpen: false,
-      product: null
+      item: null
     });
   }, []);
 
@@ -63,8 +65,8 @@ export function useConfirmModal(): UseConfirmModalReturn {
   const closeResetModal = useCallback(() => {
     setResetModal({
       isOpen: false,
-      product: null,
-      originalProduct: null
+      item: null,
+      originalItem: null
     });
   }, []);
 
